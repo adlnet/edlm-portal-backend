@@ -1,0 +1,41 @@
+services:
+  db_portal:
+    image: postgres
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: "${DB_NAME}"
+#      POSTGRES_USER: 'root'
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    networks:
+      - openlxp
+
+  app:
+    container_name: backend
+    build:
+      context: .
+    ports:
+      - "8100:8020"
+    command: >
+      sh -c ". /opt/app/start-app.sh"
+    environment:
+      DB_NAME: "${DB_NAME}"
+      DB_USER: "${DB_USER}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_HOST: "${DB_HOST}"
+      DJANGO_SUPERUSER_USERNAME: "${DJANGO_SUPERUSER_USERNAME}"
+      DJANGO_SUPERUSER_PASSWORD: "${DJANGO_SUPERUSER_PASSWORD}"
+      DJANGO_SUPERUSER_EMAIL: "${DJANGO_SUPERUSER_EMAIL}"
+      SECRET_KEY_VAL: "${SECRET_KEY_VAL}"
+      LOG_PATH: "${LOG_PATH}"
+      LOGIN_REDIRECT_URL: "${LOGIN_REDIRECT_URL}"
+    volumes:
+      - ./app:/opt/app/portal-backend
+    depends_on:
+      - db_portal
+    networks:
+      - openlxp
+
+networks:
+  openlxp:
+    external: true
