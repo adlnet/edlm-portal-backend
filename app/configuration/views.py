@@ -11,5 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 class ConfigurationViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Retrieve configuration information
+    """
     queryset = Configuration.objects.all()
     serializer_class = ConfigurationSerializer

@@ -158,7 +158,7 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Django EDLM Portal Endpoints',
+    'TITLE': 'EDLM Portal Endpoints',
     'DESCRIPTION': 'EDLM Portal Backend API Documentation',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,

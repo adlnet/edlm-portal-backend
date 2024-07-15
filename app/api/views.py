@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class ProfileQuestionViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Retrieve all active Profile Questions
+    """
     queryset = ProfileQuestion.objects.filter(active=True)
     serializer_class = ProfileQuestionSerializer
     filter_backends = [filter.SearchFilter, filter.OrderingFilter]
@@ -25,6 +28,9 @@ class ProfileQuestionViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ProfileResponseViewSet(viewsets.ModelViewSet):
+    """
+    Retrieve all responses of current user for active Profile Questions
+    """
     queryset = ProfileResponse.objects.filter(question__active=True)
     serializer_class = ProfileResponseSerializer
     filter_backends = [DjangoFilterBackend, filters.ObjectPermissionsFilter,]
