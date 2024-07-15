@@ -25,7 +25,7 @@ class ProfileQuestion(models.Model):
         return f'{self.order}. {self.question}'
 
     def get_absolute_url(self):
-        return reverse("profile-questions", kwargs={"pk": self.pk})
+        return reverse("profile-questions-detail", kwargs={"pk": self.pk})
 
 
 class ProfileAnswer(models.Model):
@@ -64,4 +64,4 @@ class ProfileResponse(TimeStampedModel):
         ]
 
     def get_absolute_url(self):
-        return reverse("profile-responses", kwargs={"pk": self.pk})
+        return reverse("profile-responses-detail", kwargs={"pk": self.pk})

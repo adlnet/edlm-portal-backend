@@ -15,7 +15,7 @@ class ProfileAnswerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProfileAnswer
-        fields = ['order', 'answer',]
+        fields = ['order', 'answer', 'id']
 
 
 class ProfileQuestionSerializer(serializers.ModelSerializer):
@@ -23,7 +23,7 @@ class ProfileQuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProfileQuestion
-        fields = ['order', 'question', 'answers',]
+        fields = ['order', 'question', 'answers', 'id']
 
 
 class ProfileResponseSerializer(ObjectPermissionsAssignmentMixin,
@@ -38,14 +38,14 @@ class ProfileResponseSerializer(ObjectPermissionsAssignmentMixin,
 
     class Meta:
         model = ProfileResponse
-        fields = ['submitted_by', 'question', 'selected',]
+        fields = ['submitted_by', 'question', 'selected', 'id']
         validators = [UniqueTogetherValidator(ProfileResponse.objects.all(), [
                                               'submitted_by', 'question',])]
 
     def get_permissions_map(self, created):
         perms = {}
         if not created:
-            submitted_by = self.instance.poster
+            submitted_by = self.instance.submitted_by
             perms = {
                 'view_profileresponse': [submitted_by,],
                 'change_profileresponse': [submitted_by,],
@@ -58,9 +58,7 @@ class ProfileResponseSerializer(ObjectPermissionsAssignmentMixin,
         """
         check question and selected relationship
         """
-        question = ProfileQuestion.objects.get(attrs['question'])
-        answer = ProfileAnswer.objects.get(attrs['answer'])
-        if answer not in question.answers:
+        if not attrs['question'].answers.contains(attrs['selected']):
             raise serializers.ValidationError(
                 "selected answer must be for the selected question")
         return attrs

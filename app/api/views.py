@@ -19,14 +19,29 @@ class ProfileQuestionViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ProfileQuestion.objects.filter(active=True)
     serializer_class = ProfileQuestionSerializer
     filter_backends = [filter.SearchFilter, filter.OrderingFilter]
-    search_fields = ['order',]
+    search_fields = ['order', 'question',]
     ordering_fields = ['order',]
+    ordering = ['order',]
 
 
 class ProfileResponseViewSet(viewsets.ModelViewSet):
-    queryset = ProfileResponse.objects.all()
+    queryset = ProfileResponse.objects.filter(question__active=True)
     serializer_class = ProfileResponseSerializer
-    filter_backends = [DjangoFilterBackend, filters.ObjectPermissionsFilter,
-                       filter.SearchFilter,]
-    filterset_fields = ['submitted_by', ]
-    search_fields = ['question']
+    filter_backends = [DjangoFilterBackend, filters.ObjectPermissionsFilter,]
+
+    def initial(self, request, *args, **kwargs):
+        """
+        pop submitted_by value to use current user as default
+        """
+        if hasattr(request, 'data') and 'submitted_by' in request.data:
+            request.data.pop('submitted_by')
+        request = super().initial(request, *args, **kwargs)
+        return request
+
+    def get_queryset(self):
+        """
+        This view should return a list of all the responses
+        for the currently authenticated user.
+        """
+        user = self.request.user
+        return self.queryset.filter(submitted_by=user)

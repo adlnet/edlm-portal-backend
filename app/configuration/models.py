@@ -30,4 +30,4 @@ class Configuration(models.Model):
         return super(Configuration, self).save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return reverse("config", kwargs={"pk": self.pk})
+        return reverse("config-detail", kwargs={"pk": self.pk})

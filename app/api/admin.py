@@ -14,7 +14,9 @@ class ProfileAnswerInline(admin.TabularInline):
 
 @admin.register(ProfileQuestion)
 class ProfileQuestionAdmin(admin.ModelAdmin):
-    list_display = ('active', 'order', 'question')
+    list_display = ('question', 'order', 'active')
+    list_filter = ("active",)
+    ordering = ("order",)
 
     inlines = [ProfileAnswerInline]
 
@@ -43,7 +45,9 @@ class ProfileQuestionAdmin(admin.ModelAdmin):
 
 @admin.register(ProfileAnswer)
 class ProfileAnswerAdmin(admin.ModelAdmin):
-    list_display = ('order', 'answer', 'question')
+    list_display = ('answer', 'order', 'question')
+    list_filter = ("question",)
+    ordering = ("question", "order",)
 
     fieldsets = (
         (
