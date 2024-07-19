@@ -8,18 +8,8 @@ from users.models import User
 # Create your models here.
 class ProfileQuestion(models.Model):
     active = models.BooleanField(default=False)
-    order = models.PositiveSmallIntegerField()
-    question = models.TextField()
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['active', 'order',],
-                name='unique_active_question_order'),
-            models.UniqueConstraint(
-                fields=['active', 'order', 'question'],
-                name='fully_unique_question'),
-        ]
+    order = models.PositiveSmallIntegerField(unique=True)
+    question = models.TextField(unique=True)
 
     def __str__(self):
         return f'{self.order}. {self.question}'
@@ -40,8 +30,8 @@ class ProfileAnswer(models.Model):
                 fields=['question', 'order',],
                 name='unique_answer_order'),
             models.UniqueConstraint(
-                fields=['question', 'order', 'answer'],
-                name='fully_unique_answer')
+                fields=['question', 'answer'],
+                name='unique_question_answer')
         ]
 
     def __str__(self):
