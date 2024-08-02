@@ -1,21 +1,68 @@
-from configuration.models import Configuration
 from django.contrib import admin
+from guardian.admin import GuardedModelAdmin
+
+from configuration.models import AdminConfiguration, Configuration
 
 # Register your models here.
 
 
 @admin.register(Configuration)
 class ConfigurationAdmin(admin.ModelAdmin):
-    list_display = ('target_xds_api', 'target_elrr_api', 'target_eccr_api')
+    list_display = ('pk',)
+    filter_horizontal = ['manager_group',
+                         'org_admin_group',]
 
     fieldsets = (
         (
-            "Connections",
+            "Base Connections",
             {
                 "fields": (
                     'target_xds_api',
                     'target_elrr_api',
                     'target_eccr_api',
+                )
+            }
+        ),
+        (
+            "Manager Connections",
+            {
+                "fields": (
+                    'manager_group',
+                )
+            }
+        ),
+        (
+            "Organization Admin Connections",
+            {
+                "fields": (
+                    'target_xms_api',
+                    'target_ldss_api',
+                    'org_admin_group',
+                )
+            }
+        ),
+    )
+
+
+@admin.register(AdminConfiguration)
+class AdminConfigurationAdmin(GuardedModelAdmin):
+    list_display = ('name', 'target', )
+
+    fieldsets = (
+        (
+            "General",
+            {
+                "fields": (
+                    'name',
+                    'target',
+                )
+            }
+        ),
+        (
+            "Connections",
+            {
+                "fields": (
+                    'config',
                 )
             }
         ),

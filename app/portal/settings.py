@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'users',
     'configuration',
     'api',
+    'vacancies',
+    'external',
 ]
 
 MIDDLEWARE = [

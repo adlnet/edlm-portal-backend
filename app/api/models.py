@@ -1,6 +1,7 @@
 from django.db import models
 from django.urls import reverse
 from model_utils.models import TimeStampedModel
+from vacancies.models import Vacancy
 
 from users.models import User
 
@@ -10,6 +11,9 @@ class ProfileQuestion(models.Model):
     active = models.BooleanField(default=False)
     order = models.PositiveSmallIntegerField(unique=True)
     question = models.TextField(unique=True)
+
+    class Meta:
+        ordering = ['order',]
 
     def __str__(self):
         return f'{self.order}. {self.question}'
@@ -33,6 +37,7 @@ class ProfileAnswer(models.Model):
                 fields=['question', 'answer'],
                 name='unique_question_answer')
         ]
+        ordering = ['order',]
 
     def __str__(self):
         return f'{self.order}. {self.answer}'
@@ -55,3 +60,36 @@ class ProfileResponse(TimeStampedModel):
 
     def get_absolute_url(self):
         return reverse("profile-responses-detail", kwargs={"pk": self.pk})
+
+
+class CandidateList(TimeStampedModel):
+    ranker = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='lists')
+    name = models.TextField()
+    role = models.ForeignKey(
+        Vacancy, on_delete=models.CASCADE, related_name='recommended')
+
+    def __str__(self):
+        return f'{self.name} - {self.role} ({self.ranker})'
+
+
+class CandidateRanking(TimeStampedModel):
+    candidate_list = models.ForeignKey(
+        CandidateList, on_delete=models.CASCADE, related_name='rankings')
+    candidate = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='rankings')
+    rank = models.PositiveSmallIntegerField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['candidate_list', 'rank',],
+                name='unique_list_ranks'),
+            models.UniqueConstraint(
+                fields=['candidate_list', 'candidate'],
+                name='unique_candidates_in_list')
+        ]
+        ordering = ['rank',]
+
+    def __str__(self):
+        return f'{self.rank}. {self.candidate} in {self.candidate_list}'
