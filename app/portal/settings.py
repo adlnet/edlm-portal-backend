@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -41,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.admindocs',
     # External Packages
     'rest_framework',
+    'knox',
     'drf_spectacular',
     'django_filters',
     'guardian',
@@ -50,6 +52,7 @@ INSTALLED_APPS = [
     'api',
     'vacancies',
     'external',
+    'key_auth',
 ]
 
 MIDDLEWARE = [
@@ -151,6 +154,7 @@ REST_FRAMEWORK = {
         'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
+        'knox.auth.TokenAuthentication',
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "portal.permissions.CustomObjectPermissions",
@@ -169,3 +173,15 @@ SPECTACULAR_SETTINGS = {
 # Guardian Settings
 GUARDIAN_RAISE_403 = True
 ANONYMOUS_USER_NAME = None
+
+# Knox settings
+REST_KNOX = {}
+if os.environ.get('TOKEN_LIFE_HOURS') is not None:
+    REST_KNOX['TOKEN_TTL'] = timedelta(
+        hours=float(os.environ.get('TOKEN_LIFE_HOURS')))
+elif os.environ.get('TOKEN_LIFE_FOREVER') is not None:
+    REST_KNOX['TOKEN_TTL'] = None
+
+if os.environ.get('TOKEN_COUNT_PER_USER') is not None:
+    REST_KNOX['TOKEN_LIMIT_PER_USER'] = int(
+        os.environ.get('TOKEN_COUNT_PER_USER'))
