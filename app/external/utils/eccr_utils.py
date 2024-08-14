@@ -3,12 +3,12 @@ from datetime import timedelta
 
 import requests
 from django.utils import timezone
-from external.models import Job
 from requests.auth import AuthBase
 from rest_framework import status
 from rest_framework.response import Response
 
 from configuration.models import Configuration
+from external.models import Job
 
 
 def get_eccr_search_api_url():

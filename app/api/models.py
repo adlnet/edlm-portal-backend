@@ -1,9 +1,9 @@
 from django.db import models
 from django.urls import reverse
 from model_utils.models import TimeStampedModel
-from vacancies.models import Vacancy
 
 from users.models import User
+from vacancies.models import Vacancy
 
 
 # Create your models here.
