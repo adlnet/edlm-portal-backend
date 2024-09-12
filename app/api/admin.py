@@ -1,7 +1,9 @@
 from django.contrib import admin, messages
 from django.utils.translation import ngettext
+from guardian.admin import GuardedModelAdmin
 
-from api.models import ProfileAnswer, ProfileQuestion, ProfileResponse
+from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
+                        ProfileQuestion, ProfileResponse, TrainingPlan)
 
 # Register your models here.
 
@@ -124,6 +126,128 @@ class ProfileAnswerAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "order",
+                )
+            }
+        ),
+    )
+
+
+class CandidateRankingInline(admin.TabularInline):
+    can_delete = False
+    model = CandidateRanking
+    fields = ('candidate', 'rank',)
+    extra = 3
+
+
+@admin.register(CandidateList)
+class CandidateListAdmin(GuardedModelAdmin):
+    list_display = ('name', 'role', 'competency', 'ranker')
+    list_filter = ("ranker", "role", 'competency',)
+    readonly_fields = ('modified', 'created',)
+    date_hierarchy = 'modified'
+    # ordering = ("question", "order",)
+
+    inlines = [CandidateRankingInline]
+
+    fieldsets = (
+        (
+            "General",
+            {
+                # on the same line
+                "fields": (
+                    "name",
+                )
+            },
+        ),
+        (
+            "Connections",
+            {
+                "fields": (
+                    "role",
+                    "competency",
+                    "ranker",
+                )
+            }
+        ),
+        (
+            "Meta",
+            {
+                "classes": ["collapse"],
+                "fields": (
+                    "modified",
+                    "created",
+                )
+            }
+        ),
+    )
+
+
+@admin.register(CandidateRanking)
+class CandidateRankingAdmin(GuardedModelAdmin):
+    list_display = ('candidate', 'candidate_list', 'rank',)
+    list_filter = ("candidate", "candidate_list",)
+    ordering = ("candidate_list", "rank",)
+    readonly_fields = ('modified', 'created',)
+    date_hierarchy = 'modified'
+
+    fieldsets = (
+        (
+            "General",
+            {
+                # on the same line
+                "fields": (
+                    "rank",
+                )
+            },
+        ),
+        (
+            "Connections",
+            {
+                "fields": (
+                    "candidate_list",
+                    "candidate",
+                )
+            }
+        ),
+        (
+            "Meta",
+            {
+                "classes": ["collapse"],
+                "fields": (
+                    "modified",
+                    "created",
+                )
+            }
+        ),
+    )
+
+
+@admin.register(TrainingPlan)
+class TrainingPlanAdmin(GuardedModelAdmin):
+    list_display = ('trainee', 'planner', 'role',)
+    list_filter = ("trainee", "planner", "role",)
+    ordering = ("trainee", "planner", "role",)
+    readonly_fields = ('modified', 'created',)
+    date_hierarchy = 'modified'
+
+    fieldsets = (
+        (
+            "Connections",
+            {
+                "fields": (
+                    "trainee",
+                    "planner",
+                    "role",
+                )
+            }
+        ),
+        (
+            "Meta",
+            {
+                "classes": ["collapse"],
+                "fields": (
+                    "modified",
+                    "created",
                 )
             }
         ),

@@ -106,3 +106,17 @@ def get_eccr_item(id, type, auth=None):
     else:
         return requests.post(get_eccr_data_api_url() + f'{type}/{id}',
                              timeout=3.0, data=data)
+
+
+class SignatureAuth(AuthBase):
+    """Attaches HTTP Authorization Header to the given Request object."""
+
+    def __init__(self, signature):
+        super().__init__()
+        self.sig = signature if isinstance(signature, list) else [signature,]
+
+    def __call__(self, r):
+        # modify and return the request
+
+        r.data['signatureSheet'] = self.sig
+        return r
