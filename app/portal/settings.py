@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'api',
     'vacancies',
     'external',
+    'graph',
     'key_auth',
 ]
 
