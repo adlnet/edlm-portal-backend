@@ -21,7 +21,7 @@ class GraphView(views.APIView):
     # queryset = Configuration.objects.all()
     # filter_backends = [filters.ObjectPermissionsFilter]
     # authentication_classes = [authentication.SessionAuthentication]
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.AllowAny]
 
     def get(self, request, format=None):
         scale_factor = 40
@@ -126,9 +126,9 @@ class GraphView(views.APIView):
             f.write(html)
             f.flush()
 
-        return Response(True)
+        # return Response(True)
 
-        return Response(json.dumps(json_item(p)))
+        return Response(json_item(p))
 
     def post(self, request, format=None):
         scale_factor = 5
@@ -250,6 +250,6 @@ class GraphView(views.APIView):
             f.write(html)
             f.flush()
 
-        return Response(True)
+        # return Response(True)
 
-        return Response(json.dumps(json_item(p)))
+        return Response(json_item(p))
