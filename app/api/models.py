@@ -2,6 +2,7 @@ from django.db import models
 from django.urls import reverse
 from model_utils.models import TimeStampedModel
 
+from external.models import Job
 from users.models import User
 from vacancies.models import Vacancy
 
@@ -67,10 +68,25 @@ class CandidateList(TimeStampedModel):
         User, on_delete=models.CASCADE, related_name='lists')
     name = models.TextField()
     role = models.ForeignKey(
-        Vacancy, on_delete=models.CASCADE, related_name='recommended')
+        Vacancy, on_delete=models.CASCADE, related_name='recommended',
+        null=True, blank=True)
+    competency = models.ForeignKey(
+        Job, on_delete=models.CASCADE, related_name='recommended',
+        null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(role__isnull=True) ^ models.Q(
+                    competency__isnull=True), name="role_or_competency")
+        ]
 
     def __str__(self):
-        return f'{self.name} - {self.role} ({self.ranker})'
+        return f'{self.name} - {self.role if self.competency is None
+                                else self.competency} ({self.ranker})'
+
+    def get_absolute_url(self):
+        return reverse("candidate-lists-detail", kwargs={"pk": self.pk})
 
 
 class CandidateRanking(TimeStampedModel):
@@ -91,5 +107,25 @@ class CandidateRanking(TimeStampedModel):
         ]
         ordering = ['rank',]
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.candidate_list.save(update_fields=['modified',])
+
     def __str__(self):
         return f'{self.rank}. {self.candidate} in {self.candidate_list}'
+
+    def get_absolute_url(self):
+        return reverse("candidate-rankings-detail", kwargs={"pk": self.pk})
+
+
+class TrainingPlan(TimeStampedModel):
+    trainee = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='training_plans_for_me')
+    planner = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='training_plans_by_me')
+    role = models.ForeignKey(
+        Job, on_delete=models.CASCADE, related_name='training_plans',
+        null=True, blank=True)
+
+    def get_absolute_url(self):
+        return reverse("training-plans-detail", kwargs={"pk": self.pk})
