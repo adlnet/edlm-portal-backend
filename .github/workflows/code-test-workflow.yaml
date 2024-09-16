@@ -1,0 +1,50 @@
+name: EDLM Portal Backend Code CI/CD
+
+on:
+  push:
+    branches: 
+      - main
+  pull_request:
+    branches: 
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  code-test:
+    # Kicks off the workflow and prepares Github to run coverage test using a ubuntu-latest container.
+    name: Code CI/CD
+    runs-on: ubuntu-latest
+    env:
+      OS: ubuntu-latest
+      PYTHON: '3.9'
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    # Install dependencies required for tests
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update 
+        sudo apt-get install libxml2-dev libxmlsec1-dev -y --no-install-recommends
+        python -m pip install --upgrade pip
+        pip install -r ./requirements.txt
+    # Start running test scripts and generate the coverage report
+    - name: Generate Coverage Report
+      env:
+        DB_NAME: ${{ secrets.DB_NAME }}
+        DB_HOST: ${{ secrets.DB_HOST }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        DB_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
+        DB_USER: ${{ secrets.DB_USER }}
+        DJANGO_SUPERUSER_EMAIL: ${{ secrets.DJANGO_SUPERUSER_EMAIL }}
+        DJANGO_SUPERUSER_PASSWORD: ${{ secrets.DJANGO_SUPERUSER_PASSWORD }}
+        DJANGO_SUPERUSER_USERNAME: ${{ secrets.DJANGO_SUPERUSER_USERNAME }}
+        GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      run: |
+        echo "Create openlxp docker network"
+        docker network create openlxp
+        echo "Docker network successfully created"
+        echo "Running coverage unit test"
+        docker compose --env-file ./.env run app sh -c "python manage.py waitdb && coverage run manage.py test --tag=unit && flake8 && coverage report && coverage report --fail-under=80"
