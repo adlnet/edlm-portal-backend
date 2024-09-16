@@ -19,7 +19,7 @@ RUN mkdir -p /opt/app/portal-backend
 COPY requirements.txt start-server.sh start-app.sh /opt/app/
 RUN chmod +x /opt/app/start-server.sh
 RUN chmod +x /opt/app/start-app.sh
-COPY ./app /opt/app/openlxp-xds/
+COPY ./app /opt/app/portal-backend/
 WORKDIR /opt/app
 RUN pip install setuptools
 RUN pip install -r requirements.txt --cache-dir /opt/app/pip_cache
