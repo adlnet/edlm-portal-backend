@@ -41,26 +41,23 @@ jobs:
         DJANGO_SUPERUSER_EMAIL: ${{ secrets.DJANGO_SUPERUSER_EMAIL }}
         DJANGO_SUPERUSER_PASSWORD: ${{ secrets.DJANGO_SUPERUSER_PASSWORD }}
         DJANGO_SUPERUSER_USERNAME: ${{ secrets.DJANGO_SUPERUSER_USERNAME }}
+        LOG_PATH: ${{ secrets.LOG_PATH}}
         GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
       run: |
         echo "Create openlxp docker network"
         docker network create openlxp
         echo "Docker network successfully created"
         echo "Running coverage unit test"
-        docker compose run -e AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} \
-                           -e AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} \
-                           -e AWS_REGION: ${{ secrets.AWS_REGION }} \
-                           -e DB_NAME: ${{ secrets.DB_NAME }} \
-                           -e DB_HOST: ${{ secrets.DB_HOST }} \
-                           -e DB_PASSWORD: ${{ secrets.DB_PASSWORD }} \
-                           -e DB_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }} \
-                           -e DB_USER: ${{ secrets.DB_USER }} \
-                           -e DJANGO_SUPERUSER_EMAIL: ${{ secrets.DJANGO_SUPERUSER_EMAIL }} \
-                           -e DJANGO_SUPERUSER_PASSWORD: ${{ secrets.DJANGO_SUPERUSER_PASSWORD }} \
-                           -e DJANGO_SUPERUSER_USERNAME: ${{ secrets.DJANGO_SUPERUSER_USERNAME }} \
+        docker compose run -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+                           -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+                           -e AWS_REGION=${{ secrets.AWS_REGION }} \
+                           -e DB_NAME=${{ secrets.DB_NAME }} \
+                           -e DB_HOST=${{ secrets.DB_HOST }} \
+                           -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+                           -e DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }} \
+                           -e DB_USER=${{ secrets.DB_USER }} \
+                           -e DJANGO_SUPERUSER_EMAIL=${{ secrets.DJANGO_SUPERUSER_EMAIL }} \
+                           -e DJANGO_SUPERUSER_PASSWORD=${{ secrets.DJANGO_SUPERUSER_PASSWORD }} \
+                           -e DJANGO_SUPERUSER_USERNAME=${{ secrets.DJANGO_SUPERUSER_USERNAME }} \
                            app sh -c \
-                           "python manage.py waitdb && \
-                           coverage run manage.py test --tag=unit && \
-                           flake8 && \
-                           coverage report && \
-                           coverage report --fail-under=80"
+                           "python manage.py waitdb && coverage run manage.py test --tag=unit && flake8 && coverage report && coverage report --fail-under=80"
