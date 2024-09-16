@@ -12,7 +12,7 @@ on:
 jobs:   
   build:
     name: Build Docker Image
-    # if: github.event.pull_request.merged == true # Ensures the PR is merged before pushing
+    if: github.event.pull_request.merged == true # Ensures the PR is merged before pushing
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Code
