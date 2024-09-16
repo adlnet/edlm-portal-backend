@@ -21,6 +21,7 @@ RUN chmod +x /opt/app/start-server.sh
 RUN chmod +x /opt/app/start-app.sh
 COPY ./app /opt/app/openlxp-xds/
 WORKDIR /opt/app
+RUN pip install setuptools
 RUN pip install -r requirements.txt --cache-dir /opt/app/pip_cache
 RUN chown -R www-data:www-data /opt/app
 WORKDIR /opt/app/portal-backend/
