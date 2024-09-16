@@ -61,4 +61,4 @@ jobs:
                            -e DJANGO_SUPERUSER_PASSWORD=${{ secrets.DJANGO_SUPERUSER_PASSWORD }} \
                            -e DJANGO_SUPERUSER_USERNAME=${{ secrets.DJANGO_SUPERUSER_USERNAME }} \
                            app sh -c \
-                           "python manage.py waitdb && coverage run manage.py test --tag=unit && flake8 && coverage report && coverage report --fail-under=80"
+                           "coverage run manage.py test --tag=unit && flake8 && coverage report && coverage report --fail-under=80"
