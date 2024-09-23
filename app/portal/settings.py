@@ -72,6 +72,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = ['https://edlmportal.deloitteopenlxp.com',
                         'https://*.deloitteopenlxp.com', 'http://localhost']
+CSRF_COOKIE_DOMAIN = '.deloitteopenlxp.com'
 
 ROOT_URLCONF = 'portal.urls'
 
