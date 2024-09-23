@@ -1,4 +1,5 @@
 import json
+import uuid
 
 from bokeh.embed import file_html, json_item
 from bokeh.models import (Circle, ColumnDataSource, GraphRenderer, HoverTool,
@@ -76,7 +77,7 @@ class GraphView(views.APIView):
         save = SaveTool()
         hover = HoverTool(
             renderers=[ksats,],
-            tooltips=[('KSTAT', '@ksats'),]+[(u, '@{'+u+'}') for u in users],
+            tooltips=[('KSAT', '@ksats'),]+[(u, '@{'+u+'}') for u in users],
         )
         p.tools = [save, hover]
         p.toolbar.autohide = True
@@ -121,14 +122,15 @@ class GraphView(views.APIView):
         p.grid.grid_line_color = None
 
         html = file_html(p, CDN, "my plot")
+        name = str(uuid.uuid4())[:8]
 
-        with open('/opt/app/portal-backend/graph/test.html', 'wt') as f:
+        with open(f'/opt/app/portal-backend/media/graphs/{name}.html', 'wt') as f:
             f.write(html)
             f.flush()
 
-        # return Response(True)
+        return Response(f'/media/graphs/{name}.html')
 
-        return Response(json_item(p))
+        # return Response(json_item(p))
 
     def post(self, request, format=None):
         scale_factor = 5
@@ -183,7 +185,7 @@ class GraphView(views.APIView):
         save = SaveTool()
         hover = HoverTool(
             renderers=[ksats,],
-            tooltips=[('KSTAT', '@ksats'),]+[(u, '@{'+u+'}') for u in users],
+            tooltips=[('KSAT', '@ksats'),]+[(u, '@{'+u+'}') for u in users],
         )
         p.tools = [save, hover]
         p.toolbar.autohide = True
@@ -245,10 +247,13 @@ class GraphView(views.APIView):
         p.grid.grid_line_color = None
 
         html = file_html(p, CDN, "my plot")
+        name = str(uuid.uuid4())[:8]
 
-        with open('/opt/app/portal-backend/graph/test.html', 'wt') as f:
+        with open(f'/opt/app/portal-backend/media/graphs/{name}.html', 'wt') as f:
             f.write(html)
             f.flush()
+
+        return Response(f'/media/graphs/{name}.html')
 
         # return Response(True)
 
