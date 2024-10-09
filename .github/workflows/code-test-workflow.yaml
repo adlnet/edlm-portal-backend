@@ -1,9 +1,6 @@
-name: EDLM Portal Backend Code CI/CD
+# name: EDLM Portal Backend Code CI/CD
 
 on:
-  push: 
-    branches:
-        - dev
   pull_request:
     branches: 
       - main
