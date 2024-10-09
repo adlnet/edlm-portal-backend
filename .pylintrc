@@ -16,15 +16,13 @@ disable=duplicate-code,
         too-few-public-methods,
         too-many-ancestors,
 
-ignore-paths=^.*/app/configurations/migrations\/.*$,
-             ^.*/app/core/migrations\/.*$,
-             ^.*/app/core/models\/.*$,
-             ^.*/app/xds_api/migrations\/.*$,
-             ^.*/app/configurations/tests\/.*$,
-             ^.*/app/configurations/models\/.*$
-             ^.*/app/es_api/migrations\/.*$,
+ignore-paths=^.*/app/api/migrations\/.*$,
+             ^.*/app/configurations/migrations\/.*$,
+             ^.*/app/external/migrations\/.*$,
+             ^.*/app/graph/migrations\/.*$,
+             ^.*/app/key_auth/migrations\/.*$,
              ^.*/app/users/migrations\/.*$,
-             ^.*/app/es_api/migrations\/.*$,
+             ^.*/app/vacancies/migrations\/.*$,
              ^.*\.cache\/*\/.*$
 
 init-hook="import os, sys; sys.path.append(os.getcwd())"
