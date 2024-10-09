@@ -15,9 +15,11 @@ jobs:
       OS: ubuntu-latest
       PYTHON: '3.12'
     steps:
-    - uses: actions/checkout@v2
+    - name: Check out code
+      uses: actions/checkout@v2
+
     - name: Setup Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: 3.12
     # Install dependencies required for tests
@@ -27,7 +29,11 @@ jobs:
         sudo apt-get install libxml2-dev libxmlsec1-dev -y --no-install-recommends
         python -m pip install --upgrade pip
         pip install setuptools
+        pip install pylint
         pip install -r ./requirements.txt
+    
+    - name: Lint
+      run: pylint /app
     # Start running test scripts and generate the coverage report
     # - name: Generate Coverage Report
     #   env:
