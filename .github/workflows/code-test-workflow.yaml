@@ -1,10 +1,10 @@
-name: EDLM Portal Backend Code CI/CD
+# name: EDLM Portal Backend Code CI/CD
 
-on:
-  pull_request:
-    branches: 
-      - main
-    types: [opened, synchronize]
+# on:
+#   pull_request:
+#     branches: 
+#       - main
+#     types: [opened, synchronize]
 
 jobs:
   code-test:
