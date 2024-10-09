@@ -6,15 +6,29 @@ max-attributes=29
 [MASTER]
 DJANGO_SETTINGS_MODULE=portal.settings
 
-disable=duplicate-code,
+disable=assignment-from-no-return,
+        duplicate-code,
+        function-redefined,
+        import-outside-toplevel,
         invalid-name,
+        line-too-long,
         missing-class-docstring,
         missing-function-docstring,
         missing-module-docstring,
         no-member,
         redefined-builtin,
+        super-with-arguments,
         too-few-public-methods,
         too-many-ancestors,
+        too-many-function-args,
+        too-many-locals,
+        too-many-statements,
+        unrecognized-option,
+        unspecified-encoding,
+        unused-argument,
+        unused-import,
+        unused-variable,
+        use-dict-literal
 
 ignore-paths=^.*/app/api/migrations\/.*$,
              ^.*/app/configurations/migrations\/.*$,

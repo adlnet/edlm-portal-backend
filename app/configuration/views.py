@@ -1,7 +1,7 @@
 import logging
 
 from django.db.models import Prefetch
-from rest_framework import permissions, viewsets
+from rest_framework import viewsets
 from rest_framework_guardian import filters
 
 from configuration.models import AdminConfiguration, Configuration
@@ -20,7 +20,6 @@ class ConfigurationViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Configuration.objects.all()
     serializer_class = ConfigurationSerializer
     filter_backends = [filters.ObjectPermissionsFilter]
-    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         """Restrict access to ESO Notes"""
