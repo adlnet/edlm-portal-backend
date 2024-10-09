@@ -33,7 +33,7 @@ jobs:
         pip install -r ./requirements.txt
     
     - name: Lint
-      run: pylint /app
+      run: pylint .
     # Start running test scripts and generate the coverage report
     # - name: Generate Coverage Report
     #   env:
