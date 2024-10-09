@@ -7,9 +7,8 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  code-test:
-    # Kicks off the workflow and prepares Github to run coverage test using a ubuntu-latest container.
-    name: Code CI/CD
+  lint:
+    name: lint
     runs-on: ubuntu-latest
     env:
       OS: ubuntu-latest
@@ -17,7 +16,27 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v2
-
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.12
+    - name: Installing pylint
+      run: |
+        sudo apt-get update
+        python -m pip install --upgrade pip
+        pip install pylint
+    - name: Running lint
+      run: pylint .
+  code-coverage:
+    # Kicks off the workflow and prepares Github to run coverage test using a ubuntu-latest container.
+    name: Install Dependencies
+    runs-on: ubuntu-latest
+    env:
+      OS: ubuntu-latest
+      PYTHON: '3.12'
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
@@ -29,11 +48,7 @@ jobs:
         sudo apt-get install libxml2-dev libxmlsec1-dev -y --no-install-recommends
         python -m pip install --upgrade pip
         pip install setuptools
-        pip install pylint
         pip install -r ./requirements.txt
-    
-    - name: Lint
-      run: pylint .
     # Start running test scripts and generate the coverage report
     # - name: Generate Coverage Report
     #   env:
