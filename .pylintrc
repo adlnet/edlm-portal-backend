@@ -27,7 +27,7 @@ ignore-paths=^.*/app/configurations/migrations\/.*$,
              ^.*/app/es_api/migrations\/.*$,
              ^.*\.cache\/*\/.*$
 
-init-hook="import os, sys; sys.path.append(os.cwd())"
+init-hook="import os, sys; sys.path.append(os.getcwd())"
 
 [MESSAGES CONTROL]
 
