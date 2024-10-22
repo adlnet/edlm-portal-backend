@@ -41,7 +41,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.admindocs',
     # External Packages
-    'corsheaders',
     'rest_framework',
     'knox',
     'drf_spectacular',
@@ -55,10 +54,10 @@ INSTALLED_APPS = [
     'external',
     'graph',
     'key_auth',
+    'health_check',
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -68,11 +67,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_CREDENTIALS = True
-CSRF_TRUSTED_ORIGINS = ['https://edlmportal.deloitteopenlxp.com',
-                        'https://*.deloitteopenlxp.com', 'http://localhost']
-CSRF_COOKIE_DOMAIN = '.deloitteopenlxp.com'
+SECURE_SSL_REDIRECT = False
 
 ROOT_URLCONF = 'portal.urls'
 

@@ -1,8 +1,6 @@
 import logging
 
 from django.db.models import Prefetch
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters as filter
 from rest_framework import status, viewsets
@@ -59,7 +57,7 @@ class ProfileResponseViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return self.queryset.filter(submitted_by=user)
 
-@method_decorator(csrf_exempt, name="dispatch")
+
 class CandidateListViewSet(viewsets.ModelViewSet):
     """
     Retrieve Candidate List

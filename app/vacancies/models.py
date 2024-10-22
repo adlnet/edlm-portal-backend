@@ -6,6 +6,7 @@ from external.models import Job
 
 # Create your models here.
 class Vacancy(TimeStampedModel):
+    # name = models.CharField(max_length=255)
     vacancy_key = models.CharField(primary_key=True, max_length=255)
     vacancy_key_hash = models.CharField(max_length=255)
     job = models.ForeignKey(
@@ -37,7 +38,7 @@ class Vacancy(TimeStampedModel):
 
 
     def __str__(self):
-        return f'{self.vacancy_key}'
+        return f'{self.name}'
 
     class Meta:
         verbose_name_plural = 'vacancies'
