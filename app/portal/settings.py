@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'external',
     'graph',
     'key_auth',
+    'health_check',
 ]
 
 MIDDLEWARE = [
@@ -65,6 +66,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+SECURE_SSL_REDIRECT = False
 
 ROOT_URLCONF = 'portal.urls'
 
