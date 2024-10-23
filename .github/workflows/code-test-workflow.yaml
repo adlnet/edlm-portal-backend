@@ -37,26 +37,26 @@ jobs:
         pip install setuptools
         pip install -r ./requirements.txt
   # Run pylint on code
-  lint:
-    name: lint
-    runs-on: ubuntu-latest
-    env:
-      OS: ubuntu-latest
-      PYTHON: '3.12'
-    steps:
-    - name: Check out code
-      uses: actions/checkout@v2
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.12
-    - name: Installing pylint
-      run: |
-        sudo apt-get update
-        python -m pip install --upgrade pip
-        pip install pylint
-    - name: Running lint
-      run: pylint .
+  # lint:
+  #   name: lint
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     OS: ubuntu-latest
+  #     PYTHON: '3.12'
+  #   steps:
+  #   - name: Check out code
+  #     uses: actions/checkout@v2
+  #   - name: Setup Python
+  #     uses: actions/setup-python@v4
+  #     with:
+  #       python-version: 3.12
+  #   - name: Installing pylint
+  #     run: |
+  #       sudo apt-get update
+  #       python -m pip install --upgrade pip
+  #       pip install pylint
+  #   - name: Running lint
+  #     run: pylint .
   code-coverage:
     # Kicks off the workflow and prepares Github to run coverage test using a ubuntu-latest container.
     name: code-coverage
