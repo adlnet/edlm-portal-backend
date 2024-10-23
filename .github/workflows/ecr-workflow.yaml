@@ -3,7 +3,7 @@ name: EDLM Portal Backend ECR push
 on:
   pull_request:
     branches: 
-      - main
+      - dev
     types: [closed]
 
 jobs:   

@@ -75,6 +75,9 @@ CSRF_TRUSTED_ORIGINS = ['https://edlmportal.deloitteopenlxp.com',
                         'https://*.deloitteopenlxp.com', 'http://localhost']
 CSRF_COOKIE_DOMAIN = '.deloitteopenlxp.com'
 
+SECURE_SSL_REDIRECT = True
+SECURE_REDIRECT_EXEMPT = ['health/', 'api/health/']
+
 ROOT_URLCONF = 'portal.urls'
 
 TEMPLATES = [
