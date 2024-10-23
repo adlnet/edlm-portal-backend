@@ -22,6 +22,9 @@ class JobSerializer(serializers.ModelSerializer):
         fields = ['name',
                   'job_type',
                   'reference',]
+        extra_kwargs = {
+            'reference': {'validators': []},
+        }
 
 
 class LearnerRecordSerializer(serializers.ModelSerializer):

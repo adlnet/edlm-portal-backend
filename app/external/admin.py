@@ -7,7 +7,7 @@ from external.models import Course, Job, LearnerRecord
 
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
-    list_display = ('name', 'job_type', 'reference')
+    list_display = ('reference', 'name', 'job_type' )
     list_filter = ("job_type",)
     readonly_fields = ('modified', 'created',)
     date_hierarchy = 'modified'
