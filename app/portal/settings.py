@@ -136,6 +136,9 @@ USE_I18N = True
 
 USE_TZ = True
 
+# Add CORS Variables
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
