@@ -122,7 +122,7 @@ class GraphView(views.APIView):
         p.grid.grid_line_color = None
 
         html = file_html(p, CDN, "my plot")
-        name = str(uuid.uuid4())[:8]
+        name = str(uuid.uuid4())
 
         with open(f'/opt/app/portal-backend/media/graphs/{name}.html', 'wt') as f:
             f.write(html)
@@ -247,7 +247,7 @@ class GraphView(views.APIView):
         p.grid.grid_line_color = None
 
         html = file_html(p, CDN, "my plot")
-        name = str(uuid.uuid4())[:8]
+        name = str(uuid.uuid4())
 
         with open(f'/opt/app/portal-backend/media/graphs/{name}.html', 'wt') as f:
             f.write(html)
