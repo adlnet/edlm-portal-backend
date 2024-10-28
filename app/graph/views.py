@@ -33,7 +33,7 @@ class GraphView(views.APIView):
             return Response("Maximum 10 users",
                             status=status.HTTP_400_BAD_REQUEST)
         dict_values = {
-            'ksats': ['Knowledge of Cybersecurity', 'Ability in fork-bomb attacks', 'Skill in Kali',],
+            'ksats': ['Knowledge of Security Assessment and Authorization process. (K0037)', 'Skill in preparing Test & Evaluation reports. (S0115)', 'Ability to collect, verify, and validate test data. (A0030)',],
             # 'User A': [60, 90, 30],
             # 'User B': [10, 16, 99],
             # 'User C': [0, 33, 50],
@@ -60,6 +60,24 @@ class GraphView(views.APIView):
 
         def descale(val):
             return val-scale_factor
+
+        def split_ksa(strval):
+            typical_len = 18
+            local_str = strval
+            split_list = []
+            while len(local_str) > 0:
+                if -1 == local_str[:typical_len].rfind(' '):
+                    if len(local_str) < typical_len:
+                        split_list.append(local_str)
+                        break
+                    split_list.append(local_str.split(' ', 1)[0])
+                    local_str = local_str.split(' ', 1)[1]
+                else:
+                    split_list.append(
+                        local_str[:local_str[:typical_len].rfind(' ')])
+                    local_str = local_str[local_str[:typical_len].rfind(
+                        ' ')+1:]
+            return split_list
 
         p = figure(
             # width=800, height=800, title="",
@@ -105,7 +123,7 @@ class GraphView(views.APIView):
         xr = r * cos(angles + big_angle/2)
         yr = r * sin(angles + big_angle/2)
         p.text(
-            xr, yr, ["\n".join(x.split()) for x in values.ksats],
+            xr, yr, ["\n".join(split_ksa(x)) for x in values.ksats],
             text_font_size="13px", anchor="center",
         )
 
@@ -168,6 +186,24 @@ class GraphView(views.APIView):
 
         def descale(val):
             return val-scale_factor
+
+        def split_ksa(strval):
+            typical_len = 18
+            local_str = strval
+            split_list = []
+            while len(local_str) > 0:
+                if -1 == local_str[:typical_len].rfind(' '):
+                    if len(local_str) < typical_len:
+                        split_list.append(local_str)
+                        break
+                    split_list.append(local_str.split(' ', 1)[0])
+                    local_str = local_str.split(' ', 1)[1]
+                else:
+                    split_list.append(
+                        local_str[:local_str[:typical_len].rfind(' ')])
+                    local_str = local_str[local_str[:typical_len].rfind(
+                        ' ')+1:]
+            return split_list
 
         p = figure(
             # width=800, height=800, title="",
@@ -232,7 +268,7 @@ class GraphView(views.APIView):
         xr = r * cos(angles + big_angle/2)
         yr = r * sin(angles + big_angle/2)
         p.text(
-            xr, yr, ["\n".join(x.split()) for x in values.ksats],
+            xr, yr, ["\n".join(split_ksa(x)) for x in values.ksats],
             text_font_size="13px", anchor="center",
         )
 
