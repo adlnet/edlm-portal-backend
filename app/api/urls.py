@@ -3,6 +3,8 @@ from rest_framework.routers import DefaultRouter
 
 from api import views
 
+app_name = 'api'
+
 # Create a router and register our ViewSets with it.
 router = DefaultRouter()
 router.register(r'profile-questions', views.ProfileQuestionViewSet,

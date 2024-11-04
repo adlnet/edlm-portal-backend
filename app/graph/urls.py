@@ -2,6 +2,8 @@ from django.urls import include, path
 from graph import views
 from rest_framework.routers import DefaultRouter
 
+app_name = 'graph'
+
 # Create a router and register our ViewSets with it.
 router = DefaultRouter()
 # router.register(r'graph', views.GraphView.as_view(),
