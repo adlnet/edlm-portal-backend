@@ -1,3 +1,4 @@
+from django.test import override_settings
 from rest_framework.test import APITestCase
 
 from api.models import ProfileAnswer, ProfileQuestion
@@ -9,6 +10,11 @@ class TestSetUp(APITestCase):
 
     def setUp(self):
         """Function to set up necessary data for testing"""
+        # settings management
+        settings_manager = override_settings(SECURE_SSL_REDIRECT=False)
+        settings_manager.enable()
+        self.addCleanup(settings_manager.disable)
+
         # Auth stuff
         self.auth_email = "test_auth@test.com"
         self.auth_password = "test_auth1234"
@@ -46,6 +52,3 @@ class TestSetUp(APITestCase):
                                   answer=answer_2)
 
         return super().setUp()
-
-    def tearDown(self):
-        return super().tearDown()
