@@ -5,7 +5,6 @@ from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
                         ProfileQuestion, ProfileResponse, TrainingPlan)
 from external.models import Job
 from users.models import User
-from vacancies.models import Vacancy
 
 
 class TestSetUp(APITestCase):

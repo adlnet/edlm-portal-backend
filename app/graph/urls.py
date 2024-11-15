@@ -1,6 +1,7 @@
 from django.urls import include, path
-from graph import views
 from rest_framework.routers import DefaultRouter
+
+from graph import views
 
 app_name = 'graph'
 

@@ -1,12 +1,8 @@
 import json
-from unittest.mock import patch
 
 from django.test import tag
 from django.urls import reverse
 from rest_framework import status
-
-from external.models import Job
-from users.models import User
 
 from .test_setup import TestSetUp
 
