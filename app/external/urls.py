@@ -3,6 +3,8 @@ from rest_framework.routers import DefaultRouter
 
 from external import views
 
+app_name = 'ext'
+
 # Create a router and register our ViewSets with it.
 router = DefaultRouter()
 router.register(r'courses', views.CourseViewSet,

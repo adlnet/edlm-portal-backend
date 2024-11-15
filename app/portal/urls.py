@@ -31,7 +31,7 @@ urlpatterns = [
     re_path('api/', include('graph.urls')),
     re_path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     re_path("api/schema/docs/",
-         SpectacularSwaggerView.as_view(url_name="schema")),
+            SpectacularSwaggerView.as_view(url_name="schema")),
     re_path('auth/', include('key_auth.urls')),
     re_path('health/', include('health_check.urls'),
             name='health_check')

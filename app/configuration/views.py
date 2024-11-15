@@ -23,7 +23,7 @@ class ConfigurationViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        """Restrict access to ESO Notes"""
+        """Restrict access to Admin Configurations"""
         return super().get_queryset().prefetch_related(
             Prefetch('admins',
                      filters.ObjectPermissionsFilter().filter_queryset(
