@@ -4,7 +4,8 @@ from unittest.mock import mock_open, patch
 from django.core.exceptions import ValidationError
 from django.test import tag
 
-from api.models import ProfileAnswer, ProfileQuestion, ProfileResponse
+from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
+                        ProfileQuestion, ProfileResponse)
 
 from .test_setup import TestSetUp
 
@@ -231,3 +232,141 @@ class ModelTests(TestSetUp):
         self.assertEqual(self.pq.responses.count(), 1)
         self.assertEqual(self.pa.responses.count(), 1)
         self.assertEqual(self.auth_user.responses.count(), 1)
+
+    def test_candidate_list(self):
+        """Test that creating a CandidateList is successful"""
+
+        name = 'my cl'
+        self.job.save()
+
+        cl = CandidateList(name=name,
+                           ranker=self.auth_user,
+                           competency=self.job)
+        cl.full_clean()
+        cl.save()
+
+        self.assertEqual(cl.name, name)
+        self.assertEqual(cl.ranker, self.auth_user)
+        self.assertEqual(cl.competency, self.job)
+        self.assertIn(name, str(cl))
+        self.assertIn(str(self.job), str(cl))
+        self.assertIn(str(self.auth_user), str(cl))
+        self.assertEqual(CandidateList.objects.all().count(), 1)
+        self.assertEqual(self.job.recommended.count(), 1)
+        self.assertEqual(self.auth_user.lists.count(), 1)
+
+    def test_candidate_list_missing_role_and_competency(self):
+        """Test that creating a CandidateList with missing role and competency
+        fails"""
+
+        name = 'my cl'
+        error_msg = "{'__all__': ['Constraint “role_or_competency” is " +\
+            "violated.']}"
+
+        cl = CandidateList(name=name,
+                           ranker=self.auth_user)
+
+        self.assertRaisesMessage(ValidationError, error_msg,
+                                 cl.full_clean)
+        self.assertEqual(CandidateList.objects.all().count(), 0)
+        self.assertEqual(self.job.recommended.count(), 0)
+        self.assertEqual(self.auth_user.lists.count(), 0)
+
+    def test_candidate_ranking(self):
+        """Test that creating a CandidateRanking is successful"""
+
+        rank = 16
+        self.job.save()
+        self.cl.save()
+
+        cr = CandidateRanking(candidate_list=self.cl,
+                              candidate=self.auth_user,
+                              rank=rank)
+        cr.full_clean()
+        cr.save()
+
+        self.assertEqual(cr.rank, rank)
+        self.assertEqual(cr.candidate, self.auth_user)
+        self.assertEqual(cr.candidate_list, self.cl)
+        self.assertIn(str(rank), str(cr))
+        self.assertIn(str(self.cl), str(cr))
+        self.assertIn(str(self.auth_user), str(cr))
+        self.assertEqual(CandidateRanking.objects.all().count(), 1)
+        self.assertEqual(self.cl.rankings.count(), 1)
+        self.assertEqual(self.auth_user.rankings.count(), 1)
+
+    def test_candidate_ranking_non_unique_rank(self):
+        """Test that creating a CandidateRanking with a non unique rank
+        fails"""
+
+        rank = 16
+
+        self.job.save()
+        self.cl.save()
+        error_msg = "{'__all__': ['Candidate ranking with this Candidate " +\
+            "list and Rank already exists.']}"
+
+        cr = CandidateRanking(candidate_list=self.cl,
+                              candidate=self.auth_user,
+                              rank=rank)
+        cr.full_clean()
+        cr.save()
+
+        cr_2 = CandidateRanking(candidate_list=self.cl,
+                                candidate=self.basic_user,
+                                rank=rank)
+
+        self.assertRaisesMessage(ValidationError, error_msg,
+                                 cr_2.full_clean)
+        self.assertEqual(CandidateRanking.objects.all().count(), 1)
+        self.assertEqual(self.cl.rankings.count(), 1)
+        self.assertEqual(self.auth_user.rankings.count(), 1)
+
+    def test_candidate_ranking_non_unique_candidate(self):
+        """Test that creating a CandidateRanking with a non unique candidate
+        fails"""
+
+        rank = 16
+        rank_2 = 32
+
+        self.job.save()
+        self.cl.save()
+        error_msg = "{'__all__': ['Candidate ranking with this Candidate " +\
+            "list and Candidate already exists.']}"
+
+        cr = CandidateRanking(candidate_list=self.cl,
+                              candidate=self.auth_user,
+                              rank=rank)
+        cr.full_clean()
+        cr.save()
+
+        cr_2 = CandidateRanking(candidate_list=self.cl,
+                                candidate=self.auth_user,
+                                rank=rank_2)
+
+        self.assertRaisesMessage(ValidationError, error_msg,
+                                 cr_2.full_clean)
+        self.assertEqual(CandidateRanking.objects.all().count(), 1)
+        self.assertEqual(self.cl.rankings.count(), 1)
+        self.assertEqual(self.auth_user.rankings.count(), 1)
+
+    def test_candidate_ranking_bad_rank(self):
+        """Test that creating a CandidateRanking with a bad rank
+        fails"""
+
+        rank = -1
+
+        self.job.save()
+        self.cl.save()
+        error_msg = "{'rank': ['Ensure this value is greater than or equal" +\
+            " to 0.']}"
+
+        cr = CandidateRanking(candidate_list=self.cl,
+                              candidate=self.auth_user,
+                              rank=rank)
+
+        self.assertRaisesMessage(ValidationError, error_msg,
+                                 cr.full_clean)
+        self.assertEqual(CandidateRanking.objects.all().count(), 0)
+        self.assertEqual(self.cl.rankings.count(), 0)
+        self.assertEqual(self.auth_user.rankings.count(), 0)

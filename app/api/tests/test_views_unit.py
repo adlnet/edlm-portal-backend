@@ -5,6 +5,9 @@ from django.test import tag
 from django.urls import reverse
 from rest_framework import status
 
+from external.models import Job
+from users.models import User
+
 from .test_setup import TestSetUp
 
 
@@ -35,269 +38,284 @@ class ViewTests(TestSetUp):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(responseDict['detail'], expected_error)
 
-    # def test_schemaledger_requests_no_version(self):
-    #     """Test that making a get request to the schema api with just a schema
-    #         name should return the latest version"""
-    #     url = "%s?name=test_name" % (reverse('api:schemaledger'))
-    #     self.sourceSchema.save()
-    #     with patch('api.views.TermSet.objects') as schemaObj:
-    #         schemaObj.return_value = schemaObj
-    #         schemaObj.all.return_value = schemaObj
-    #         schemaObj.filter.return_value = schemaObj
-    #         schemaObj.order_by.return_value = schemaObj
-    #         schemaObj.first.return_value = self.sourceTS
+    def test_profile_question_requests_pass(self):
+        """Test that making a get request to the profile question api with a
+        correct id returns the profile question"""
+        self.pq.save()
+        self.pa.save()
+        self.pa_2.save()
+        url = reverse('api:profile-questions-detail',
+                      kwargs={"pk": self.pq.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
 
-    #         response = self.client.get(url)
-    #         responseDict = json.loads(response.content)
-    #         self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #         self.assertEqual(responseDict["iri"], self.sourceTS.iri)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.pq.order, responseDict['order'])
+        self.assertEqual(self.pq.question, responseDict['question'])
+        self.assertEqual(self.pq.pk, responseDict['id'])
+        self.assertEqual(self.pq.answers.count(), len(responseDict['answers']))
 
-    # def test_schemaledger_requests_no_version_found(self):
-    #     """Test that making a get request to the schema api with a version
-    #         that doesn't exist returns an error"""
-    #     url = f"%s?name={self.sourceSchema.schema_name}&version=9.9.9" % (
-    #         reverse('api:schemaledger'))
+    def test_profile_response_requests_no_auth(self):
+        """Test that making a get request to the profile response api with no
+        auth returns an error"""
+        url = reverse('api:profile-responses-detail', kwargs={"pk": 1})
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = "Authentication credentials were not provided."
 
-    #     self.sourceSchema.save()
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(responseDict['detail'], expected_error)
 
-    #     response = self.client.get(url)
-    #     responseDict = json.loads(response.content)
-    #     expected_error = ["Error; no schema found for version '9.9.9'"]
+    def test_profile_response_requests_bad_id(self):
+        """Test that making a get request to the profile response api with a
+        bad id returns an error"""
+        url = reverse('api:profile-responses-detail', kwargs={"pk": 1})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = "No ProfileResponse matches the given query."
 
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    #     self.assertEqual(responseDict['message'], expected_error)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(responseDict['detail'], expected_error)
 
-    # def test_schemaledger_requests_iri(self):
-    #     """Test that making a get request to the schema api with just an
-    #         iri should return the latest version"""
-    #     self.sourceSchema.save()
-    #     url = f"%s?iri={self.sourceSchema.schema_iri}" % (
-    #         reverse('api:schemaledger'))
-    #     with patch('api.views.TermSet.objects') as schemaObj:
-    #         schemaObj.return_value = schemaObj
-    #         schemaObj.all.return_value = schemaObj
-    #         schemaObj.filter.return_value = schemaObj
-    #         schemaObj.order_by.return_value = schemaObj
-    #         schemaObj.first.return_value = self.sourceTS
+    def test_profile_response_requests_pass(self):
+        """Test that making a get request to the profile response api with a
+        correct id returns the profile response"""
+        self.pq.save()
+        self.pa.save()
+        self.pa_2.save()
+        self.pr.save()
+        url = reverse('api:profile-responses-detail',
+                      kwargs={"pk": self.pr.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
 
-    #         response = self.client.get(url)
-    #         responseDict = json.loads(response.content)
-    #         self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #         self.assertEqual(responseDict["iri"], self.sourceTS.iri)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.pr.selected.pk, responseDict['selected'])
+        self.assertEqual(self.pr.question.pk, responseDict['question'])
+        self.assertEqual(self.pr.pk, responseDict['id'])
+        self.assertEqual(self.pr.submitted_by.email,
+                         responseDict['submitted_by'])
 
-    # def test_schemaledger_requests_iri_fail(self):
-    #     """Test that making a get request to the schema api with just an
-    #         iri should fail correctly"""
-    #     url = "%s?iri=bad" % (reverse('api:schemaledger'))
+    def test_profile_response_requests_post(self):
+        """Test that making a post request to the profile response api with
+        valid data creates a profile response"""
+        self.pq.save()
+        self.pa.save()
+        self.pa_2.save()
+        url = reverse('api:profile-responses-list')
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.post(
+            url, {'question': self.pr.question.pk,
+                  'selected': self.pr.selected.pk,
+                  'submitted_by': "anyone"})
+        responseDict = json.loads(response.content)
 
-    #     response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(self.pr.selected.pk, responseDict['selected'])
+        self.assertEqual(self.pr.question.pk, responseDict['question'])
+        self.assertIsNotNone(responseDict['id'])
+        self.assertEqual(self.pr.submitted_by.email,
+                         responseDict['submitted_by'])
 
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    def test_candidate_list_requests_no_auth(self):
+        """Test that making a get request to the candidate list api with no
+        auth returns an error"""
+        url = reverse('api:candidate-lists-detail', kwargs={"pk": 1})
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = "Authentication credentials were not provided."
 
-    # def test_schemaledger_requests_all_params(self):
-    #     """Test that making a get request to the schema api with just all
-    #         query params returns a valid object"""
-    #     url = "%s?name=test_name&version=1.2.3" % (reverse('api:schemaledger'))
-    #     self.sourceSchema.save()
-    #     with patch('api.views.TermSet.objects') as schemaObj:
-    #         schemaObj.return_value = schemaObj
-    #         schemaObj.all.return_value = schemaObj
-    #         schemaObj.filter.return_value = schemaObj
-    #         schemaObj.order_by.return_value = schemaObj
-    #         schemaObj.first.return_value = self.sourceTS
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(responseDict['detail'], expected_error)
 
-    #         response = self.client.get(url)
-    #         responseDict = json.loads(response.content)
+    def test_candidate_list_requests_bad_id(self):
+        """Test that making a get request to the candidate list api with a
+        bad id returns an error"""
+        url = reverse('api:candidate-lists-detail', kwargs={"pk": 1})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = "No CandidateList matches the given query."
 
-    #         self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #         self.assertEqual(responseDict["iri"], self.sourceTS.iri)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(responseDict['detail'], expected_error)
 
-    # def test_schemaledger_requests_no_schema_found(self):
-    #     """Test that making a get request to the schema api with just a schema
-    #         that doesn't exist returns an error"""
-    #     url = "%s?name=test&version=1.0.2" % (reverse('api:schemaledger'))
+    def test_candidate_list_requests_pass(self):
+        """Test that making a get request to the candidate list api with a
+        correct id returns the candidate list"""
+        self.job.save()
+        self.cl.save()
+        url = reverse('api:candidate-lists-detail',
+                      kwargs={"pk": self.cl.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
 
-    #     response = self.client.get(url)
-    #     responseDict = json.loads(response.content)
-    #     expected_error = ["Error; no schema found with the name 'test'"]
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.cl.competency.pk, responseDict['competency'])
+        self.assertEqual(self.cl.name, responseDict['name'])
+        self.assertEqual(self.cl.pk, responseDict['id'])
+        self.assertEqual(self.cl.ranker.email,
+                         responseDict['ranker'])
 
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    #     self.assertEqual(responseDict['message'], expected_error)
+    def test_candidate_list_requests_post(self):
+        """Test that making a post request to the candidate list api with
+        valid data creates a candidate list"""
+        self.job.save()
+        name = "some cl"
+        url = reverse('api:candidate-lists-list')
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.post(
+            url, {'name': name,
+                  'competency': self.job.pk,
+                  'ranker': "anyone"})
+        responseDict = json.loads(response.content)
 
-    # def test_transformationledger_requests_no_param(self):
-    #     """Test that making a get request to the mappings api with no query
-    #         params returns errors for each required parameter"""
-    #     url = reverse('api:transformationledger')
-    #     response = self.client.get(url)
-    #     responseDict = json.loads(response.content)
-    #     expected_error = ["Error; query parameter 'sourceName' or "
-    #                       "'sourceIRI' is required", "Error; query parameter"
-    #                       " 'targetName' or 'targetIRI' is required"]
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    #     self.assertEqual(responseDict['message'], expected_error)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(name, responseDict['name'])
+        self.assertEqual(self.job.pk, responseDict['competency'])
+        self.assertIsNotNone(responseDict['id'])
+        self.assertEqual(self.auth_user.email,
+                         responseDict['ranker'])
 
-    # def test_transformationledger_requests_no_mapping_found(self):
-    #     """Test that making a get request to the mappings api with all params
-    #         fails when no transformationledger is found"""
-    #     url = ("%s?sourceName=test&sourceVersion=1.0.2&targetName=test2&" +
-    #            "targetVersion=1.0.0") % (reverse('api:transformationledger'))
+    def test_candidate_ranking_requests_no_auth(self):
+        """Test that making a get request to the candidate ranking api with no
+        auth returns an error"""
+        url = reverse('api:candidate-rankings-detail', kwargs={"pk": 1})
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = "Authentication credentials were not provided."
 
-    #     with patch('api.views.TermSet.objects') as mappingObj:
-    #         mappingObj.return_value = mappingObj
-    #         mappingObj.all.return_value = mappingObj
-    #         mappingObj.filter.return_value = None
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(responseDict['detail'], expected_error)
 
-    #         response = self.client.get(url)
+    def test_candidate_ranking_requests_bad_id(self):
+        """Test that making a get request to the candidate ranking api with a
+        bad id returns an error"""
+        url = reverse('api:candidate-rankings-detail', kwargs={"pk": 1})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = "No CandidateRanking matches the given query."
 
-    #         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(responseDict['detail'], expected_error)
 
-    # def test_transformationledger_requests_bad_target_name(self):
-    #     """Test that making a get request to the mappings api with all params
-    #         fails when no transformationledger is found"""
-    #     self.sourceSchema.save()
-    #     self.targetSchema.save()
-    #     self.mapping.save()
-    #     url = (f"%s?sourceName={self.sourceSchema.schema_name}&"
-    #            f"sourceVersion={self.sourceSchema.version}&"
-    #            f"targetName=testtest") % (reverse('api:transformationledger'))
-    #     response = self.client.get(url)
-    #     responseDict = json.loads(response.content)
-    #     expected_error = ["Error; no target schema found with the name "
-    #                       "'testtest'"]
-    #     self.assertEqual(responseDict['message'], expected_error)
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    def test_candidate_ranking_requests_pass(self):
+        """Test that making a get request to the candidate ranking api with a
+        correct id returns the candidate ranking"""
+        self.job.save()
+        self.cl.save()
+        self.cr.save()
 
-    # def test_transformationledger_requests_all_params(self):
-    #     """Test that making a get request to the mappings api with all params
-    #         is returns transformationledger when it exists"""
-    #     url = ("%s?sourceName=test_name&sourceVersion=1.2.3&"
-    #            "targetName=test_name_1&" + "targetVersion=1.2.4") % (
-    #         reverse('api:transformationledger'))
-    #     self.sourceSchema.save()
-    #     self.targetSchema.save()
-    #     self.mapping.save()
-    #     with patch('api.views.TermSet.objects') as mappingObj:
-    #         mappingObj.return_value = mappingObj
-    #         mappingObj.all.return_value = mappingObj
-    #         mappingObj.filter.return_value = mappingObj
-    #         mappingObj.first.side_effect = [
-    #             self.sourceSchema, self.targetSchema]
+        url = reverse('api:candidate-rankings-detail',
+                      kwargs={"pk": self.cr.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
 
-    #         response = self.client.get(url)
-    #         responseDict = json.loads(response.content)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.cr.candidate.email, responseDict['candidate'])
+        self.assertEqual(self.cr.candidate_list.pk,
+                         responseDict['candidate_list'])
+        self.assertEqual(self.cr.pk, responseDict['id'])
+        self.assertEqual(self.cr.rank, responseDict['rank'])
 
-    #         self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #         self.assertEqual(responseDict["schema_mapping"],
-    #                          self.schema_mapping)
+    def test_candidate_ranking_requests_post(self):
+        """Test that making a post request to the candidate ranking api with
+        valid data creates a candidate ranking"""
+        self.job.save()
+        self.cl.save()
+        rank = 42
+        url = reverse('api:candidate-rankings-list')
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.post(
+            url, {'rank': rank,
+                  'candidate_list': self.cl.pk,
+                  'candidate': self.basic_email})
+        responseDict = json.loads(response.content)
 
-    # def test_transformationledger_requests_no_version(self):
-    #     """Test that making a get request to the mappings api with no versions
-    #         is returns transformationledger when it exists"""
-    #     url = ("%s?sourceName=test_name&"
-    #            "targetName=test_name_1") % (
-    #         reverse('api:transformationledger'))
-    #     self.sourceSchema.save()
-    #     self.targetSchema.save()
-    #     self.mapping.save()
-    #     with patch('api.views.TermSet.objects') as mappingObj:
-    #         mappingObj.return_value = mappingObj
-    #         mappingObj.all.return_value = mappingObj
-    #         mappingObj.filter.return_value = mappingObj
-    #         mappingObj.first.side_effect = [
-    #             self.sourceSchema, self.targetSchema]
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(rank, responseDict['rank'])
+        self.assertEqual(self.cl.pk, responseDict['candidate_list'])
+        self.assertIsNotNone(responseDict['id'])
+        self.assertEqual(self.basic_user.email,
+                         responseDict['candidate'])
 
-    #         response = self.client.get(url)
-    #         responseDict = json.loads(response.content)
+    def test_training_plan_requests_no_auth(self):
+        """Test that making a get request to the training plan api with no
+        auth returns an error"""
+        url = reverse('api:training-plans-detail', kwargs={"pk": 1})
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = "Authentication credentials were not provided."
 
-    #         self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #         self.assertEqual(responseDict["schema_mapping"],
-    #                          self.schema_mapping)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(responseDict['detail'], expected_error)
 
-    # def test_transformationledger_requests_wrong_source_version(self):
-    #     """Test that making a get request to the mappings api
-    #         fails correctly when no mapping with source version exists"""
-    #     self.sourceSchema.save()
-    #     self.targetSchema.save()
-    #     self.mapping.save()
-    #     url = (f"%s?sourceName={self.sourceSchema.schema_name}&"
-    #            "sourceVersion=0.0.0&"
-    #            f"targetName={self.targetSchema.schema_name}&"
-    #            f"targetVersion={self.targetSchema.version}") % (
-    #         reverse('api:transformationledger'))
-    #     response = self.client.get(url)
-    #     responseDict = json.loads(response.content)
-    #     expected_error = ["Error; no source schema found for version " +
-    #                       "'0.0.0'"]
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    #     self.assertEqual(responseDict['message'], expected_error)
+    def test_training_plan_requests_bad_id(self):
+        """Test that making a get request to the training plan api with a
+        bad id returns an error"""
+        url = reverse('api:training-plans-detail', kwargs={"pk": 1})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = "No TrainingPlan matches the given query."
 
-    # def test_transformationledger_requests_wrong_target_version(self):
-    #     """Test that making a get request to the mappings api
-    #         fails correctly when no mapping with target version exists"""
-    #     self.sourceSchema.save()
-    #     self.targetSchema.save()
-    #     self.mapping.save()
-    #     url = (f"%s?sourceName={self.sourceSchema.schema_name}&"
-    #            f"sourceVersion={self.sourceSchema.version}&"
-    #            f"targetName={self.targetSchema.schema_name}&"
-    #            "targetVersion=0.0.0") % (
-    #         reverse('api:transformationledger'))
-    #     response = self.client.get(url)
-    #     responseDict = json.loads(response.content)
-    #     expected_error = ["Error; no target schema found for version " +
-    #                       "'0.0.0'"]
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    #     self.assertEqual(responseDict['message'], expected_error)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(responseDict['detail'], expected_error)
 
-    # def test_transformationledger_requests_iris(self):
-    #     """Test that making a get request to the mappings api with iris
-    #         returns transformationledger when it exists"""
-    #     self.sourceSchema.save()
-    #     self.targetSchema.save()
-    #     self.mapping.save()
-    #     url = (f"%s?sourceIRI={self.sourceSchema.schema_iri}&"
-    #            f"targetIRI={self.targetSchema.schema_iri}") % (
-    #         reverse('api:transformationledger'))
-    #     with patch('api.views.TermSet.objects') as mappingObj:
-    #         mappingObj.return_value = mappingObj
-    #         mappingObj.all.return_value = mappingObj
-    #         mappingObj.filter.return_value = mappingObj
-    #         mappingObj.first.side_effect = [
-    #             self.sourceSchema, self.targetSchema]
+    def test_training_plan_requests_pass(self):
+        """Test that making a get request to the training plan api with a
+        correct id returns the training plan"""
+        self.job.save()
+        self.tp.save()
 
-    #         response = self.client.get(url)
-    #         responseDict = json.loads(response.content)
+        url = reverse('api:training-plans-detail',
+                      kwargs={"pk": self.tp.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
 
-    #         self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #         self.assertEqual(responseDict["schema_mapping"],
-    #                          self.schema_mapping)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.tp.trainee.email, responseDict['trainee'])
+        self.assertEqual(self.tp.role.pk,
+                         responseDict['role'])
+        self.assertEqual(self.tp.pk, responseDict['id'])
+        self.assertEqual(self.tp.planner.email, responseDict['planner'])
 
-    # def test_transformationledger_requests_iris_no_source(self):
-    #     """Test that making a get request to the mappings api with iris
-    #         fails correctly when no mapping with source exists"""
-    #     self.sourceSchema.save()
-    #     self.targetSchema.save()
-    #     url = (f"%s?sourceIRI=badIRI&"
-    #            f"targetIRI={self.targetSchema.schema_iri}") % (
-    #         reverse('api:transformationledger'))
-    #     response = self.client.get(url)
-    #     responseDict = json.loads(response.content)
-    #     expected_error = ["Error; no schema found with the iri " +
-    #                       "'badIRI'"]
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    #     self.assertEqual(responseDict['message'], expected_error)
+    def test_training_plan_requests_post(self):
+        """Test that making a post request to the training plan api with
+        valid data creates a training plan"""
+        self.job.save()
 
-    # def test_transformationledger_requests_iris_no_target(self):
-    #     """Test that making a get request to the mappings api with iris
-    #         fails correctly when no mapping with target exists"""
-    #     self.sourceSchema.save()
-    #     self.targetSchema.save()
-    #     self.mapping.save()
-    #     url = (f"%s?sourceIRI={self.sourceSchema.schema_iri}&"
-    #            f"targetIRI=testtest") % (
-    #         reverse('api:transformationledger'))
-    #     response = self.client.get(url)
-    #     responseDict = json.loads(response.content)
-    #     expected_error = ["Error; no schema found with the iri 'testtest'"]
-    #     self.assertEqual(responseDict['message'], expected_error)
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        url = reverse('api:training-plans-list')
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.post(
+            url, {'role': self.job.pk,
+                  'trainee': self.basic_user.email,
+                  'planner': "anyone"})
+        responseDict = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(self.auth_user.email, responseDict['planner'])
+        self.assertEqual(self.job.pk, responseDict['role'])
+        self.assertIsNotNone(responseDict['id'])
+        self.assertEqual(self.basic_user.email,
+                         responseDict['trainee'])
