@@ -93,7 +93,7 @@ def save_courses(course_list):
         course_list (list): a list of tuples (metadata_key_hash, course_name)
     """
     time_difference = timedelta(days=1)
-    course_name_length = Course.name.max_length
+    course_name_length = 255
     for course_hash, course_name in course_list:
         experience, new = \
             Course.objects.get_or_create(reference=course_hash)
