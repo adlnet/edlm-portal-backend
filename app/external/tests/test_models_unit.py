@@ -56,7 +56,7 @@ class ModelTests(TestSetUp):
         self.assertEqual(job.name, name)
         self.assertEqual(job.reference, reference)
         self.assertEqual(job.job_type, job_type)
-        self.assertEqual(str(job), reference)
+        self.assertEqual(str(job), name)
         self.assertEqual(Job.objects.all().count(), 1)
 
     def test_multiple_job(self):
