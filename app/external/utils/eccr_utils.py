@@ -48,7 +48,7 @@ def search_eccr(query, type=None, start=0, length=20, auth=None):
     data = {'searchParams': {"start": start, "size": length}}
     if type is not None:
         data['data'] = f'((@type:{type} OR (EncryptedValue AND ' +\
-            f'\*encryptedType:{type})) AND {query}) AND NOT ' +\
+            f'encryptedType:{type})) AND {query}) AND NOT ' +\
             '(subType:"Progression")'
     else:
         data['data'] = f'({query}) AND NOT (subType:"Progression")'

@@ -34,7 +34,7 @@ class Job(TimeStampedModel):
     job_type = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
-        return f'{self.reference}'
+        return f'{self.name}'
 
     def get_absolute_url(self):
         return reverse("jobs-detail", kwargs={"pk": self.pk})

@@ -28,6 +28,7 @@ class ModelTests(TestSetUp):
         self.assertEqual(pq.question, question)
         self.assertEqual(str(pq), f'{order}. {question}')
         self.assertEqual(ProfileQuestion.objects.all().count(), 1)
+        self.assertIn(str(pq.pk), pq.get_absolute_url())
 
     def test_profile_question_bad_order(self):
         """Test that creating a ProfileQuestion with a wrong order fails"""
@@ -202,6 +203,7 @@ class ModelTests(TestSetUp):
         self.assertEqual(self.pq.responses.count(), 1)
         self.assertEqual(self.pa.responses.count(), 1)
         self.assertEqual(self.auth_user.responses.count(), 1)
+        self.assertIn(str(pr.pk), pr.get_absolute_url())
 
     def test_profile_response_non_unique_question(self):
         """Test that creating a ProfileResponse with a non unique question
@@ -251,6 +253,7 @@ class ModelTests(TestSetUp):
         self.assertEqual(CandidateList.objects.all().count(), 1)
         self.assertEqual(self.job.recommended.count(), 1)
         self.assertEqual(self.auth_user.lists.count(), 1)
+        self.assertIn(str(cl.pk), cl.get_absolute_url())
 
     def test_candidate_list_missing_role_and_competency(self):
         """Test that creating a CandidateList with missing role and competency
@@ -291,6 +294,7 @@ class ModelTests(TestSetUp):
         self.assertEqual(CandidateRanking.objects.all().count(), 1)
         self.assertEqual(self.cl.rankings.count(), 1)
         self.assertEqual(self.auth_user.rankings.count(), 1)
+        self.assertIn(str(cr.pk), cr.get_absolute_url())
 
     def test_candidate_ranking_non_unique_rank(self):
         """Test that creating a CandidateRanking with a non unique rank

@@ -20,7 +20,7 @@ class ProfileQuestion(models.Model):
         return f'{self.order}. {self.question}'
 
     def get_absolute_url(self):
-        return reverse("profile-questions-detail", kwargs={"pk": self.pk})
+        return reverse("api:profile-questions-detail", kwargs={"pk": self.pk})
 
 
 class ProfileAnswer(models.Model):
@@ -60,7 +60,7 @@ class ProfileResponse(TimeStampedModel):
         ]
 
     def get_absolute_url(self):
-        return reverse("profile-responses-detail", kwargs={"pk": self.pk})
+        return reverse("api:profile-responses-detail", kwargs={"pk": self.pk})
 
 
 class CandidateList(TimeStampedModel):
@@ -86,7 +86,7 @@ class CandidateList(TimeStampedModel):
                                 else self.competency} ({self.ranker})'
 
     def get_absolute_url(self):
-        return reverse("candidate-lists-detail", kwargs={"pk": self.pk})
+        return reverse("api:candidate-lists-detail", kwargs={"pk": self.pk})
 
 
 class CandidateRanking(TimeStampedModel):
@@ -115,7 +115,7 @@ class CandidateRanking(TimeStampedModel):
         return f'{self.rank}. {self.candidate} in {self.candidate_list}'
 
     def get_absolute_url(self):
-        return reverse("candidate-rankings-detail", kwargs={"pk": self.pk})
+        return reverse("api:candidate-rankings-detail", kwargs={"pk": self.pk})
 
 
 class TrainingPlan(TimeStampedModel):
@@ -128,4 +128,4 @@ class TrainingPlan(TimeStampedModel):
         null=True, blank=True)
 
     def get_absolute_url(self):
-        return reverse("training-plans-detail", kwargs={"pk": self.pk})
+        return reverse("api:training-plans-detail", kwargs={"pk": self.pk})
