@@ -26,6 +26,8 @@ docutils>=0.20.1
 
 drf-spectacular == 0.25.1
 
+flake8==7.1.1
+
 gunicorn >= 22.0.0, < 22.1.0
 
 isort>=5.11.0, <5.12.0

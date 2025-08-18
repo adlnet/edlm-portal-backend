@@ -30,8 +30,8 @@ class LearnerRecord(TimeStampedModel):
 
 class Job(TimeStampedModel):
     name = models.CharField(max_length=255, blank=True)
-    reference = models.CharField(max_length=255, unique=True, primary_key=True)
-    job_type = models.CharField(max_length=255)
+    reference = models.CharField(max_length=500, primary_key=True)
+    job_type = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
         return f'{self.name}'

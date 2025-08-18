@@ -47,7 +47,7 @@ class Configuration(models.Model):
             # if you'll not check for self.pk
             # then error will also be raised in the update of exists model
             raise ValidationError(
-                'There is can be only one Configuration instance')
+                'There can only be one Configuration instance')
         return super(Configuration, self).save(*args, **kwargs)
 
     def get_absolute_url(self):

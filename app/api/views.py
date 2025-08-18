@@ -1,6 +1,8 @@
 import logging
 
 from django.db.models import Prefetch
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters as filter
 from rest_framework import status, viewsets
@@ -45,7 +47,9 @@ class ProfileResponseViewSet(viewsets.ModelViewSet):
         pop submitted_by value to use current user as default
         """
         if hasattr(request, 'data') and 'submitted_by' in request.data:
+            request.data._mutable = True
             request.data.pop('submitted_by')
+            request.data._mutable = False
         request = super().initial(request, *args, **kwargs)
         return request
 
@@ -58,6 +62,7 @@ class ProfileResponseViewSet(viewsets.ModelViewSet):
         return self.queryset.filter(submitted_by=user)
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class CandidateListViewSet(viewsets.ModelViewSet):
     """
     Retrieve Candidate List
@@ -77,7 +82,9 @@ class CandidateListViewSet(viewsets.ModelViewSet):
         pop submitted_by value to use current user as default
         """
         if hasattr(request, 'data') and 'ranker' in request.data:
+            request.data._mutable = True
             request.data.pop('ranker')
+            request.data._mutable = False
         request = super().initial(request, *args, **kwargs)
         return request
 
@@ -124,6 +131,8 @@ class TrainingPlanListViewSet(viewsets.ModelViewSet):
         pop submitted_by value to use current user as default
         """
         if hasattr(request, 'data') and 'planner' in request.data:
+            request.data._mutable = True
             request.data.pop('planner')
+            request.data._mutable = False
         request = super().initial(request, *args, **kwargs)
         return request
