@@ -41,6 +41,17 @@ class ConfigurationAdmin(admin.ModelAdmin):
                 )
             }
         ),
+        (
+            "LRS Settings",
+            {
+                "fields": (
+                    'lrs_endpoint',
+                    'lrs_username',
+                    'lrs_password',
+                    'lrs_platform',
+                )
+            }
+        ),
     )
 
 

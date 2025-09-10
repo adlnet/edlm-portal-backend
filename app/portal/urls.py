@@ -15,24 +15,24 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import include, re_path
+from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 
 urlpatterns = [
-    re_path('admin/doc/', include('django.contrib.admindocs.urls')),
-    re_path('admin/', admin.site.urls),
-    re_path('api/', include('api.urls')),
-    re_path('api/', include('configuration.urls')),
-    re_path('api/', include('vacancies.urls')),
-    re_path('api/', include('external.urls')),
-    re_path('api/', include('graph.urls')),
-    re_path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    re_path("api/schema/docs/",
-            SpectacularSwaggerView.as_view(url_name="schema")),
-    re_path('auth/', include('key_auth.urls')),
-    re_path('health/', include('health_check.urls'),
-            name='health_check')
+    path('admin/doc/', include('django.contrib.admindocs.urls')),
+    path('admin/', admin.site.urls),
+    path('api/', include('api.urls')),
+    path('api/', include('configuration.urls')),
+    path('api/', include('vacancies.urls')),
+    path('api/', include('external.urls')),
+    path('api/', include('graph.urls')),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/schema/docs/",
+         SpectacularSwaggerView.as_view(url_name="schema")),
+    path('auth/', include('key_auth.urls')),
+    path('health/', include('health_check.urls'),
+         name='health_check')
 ]

@@ -18,9 +18,6 @@ class CourseViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CourseSerializer
     filter_backends = [filter.SearchFilter,]
     search_fields = ['reference',]
-    # ordering_fields = ['order',]
-    # ordering = ['order',]
-
 
 class JobViewSet(viewsets.ReadOnlyModelViewSet):
     """

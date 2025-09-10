@@ -3,6 +3,7 @@ from rest_framework.test import APITestCase
 
 from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
                         ProfileQuestion, ProfileResponse, TrainingPlan)
+from configuration.models import Configuration
 from external.models import Job
 from users.models import User
 
@@ -97,5 +98,16 @@ class TestSetUp(APITestCase):
         self.tp = TrainingPlan(trainee=self.basic_user,
                                planner=self.auth_user,
                                role=self.job)
+        # Configuration
+        self.config = Configuration(
+            target_xds_api="test-xds",
+            target_elrr_api="test-elrr",
+            target_eccr_api="test-eccr",
+            target_xms_api="test-xms",
+            target_ldss_api="test-ldss",
+            lrs_endpoint="http://lrs.example.com/xapi",
+            lrs_username="username",
+            lrs_password="testpass"
+        ).save()
 
         return super().setUp()

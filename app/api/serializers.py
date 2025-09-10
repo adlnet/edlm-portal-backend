@@ -7,11 +7,14 @@ from rest_framework_guardian.serializers import \
 
 from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
                         ProfileQuestion, ProfileResponse, TrainingPlan)
+from configuration.utils.portal_utils import confusable_homoglyphs_check
 from external.models import Job
 from users.models import User
 from vacancies.models import Vacancy
 
 logger = logging.getLogger(__name__)
+HOMOGLYPH_ERROR = "Data contains homoglyphs and can be dangerous. Check" + \
+    " logs for more details"
 
 
 class ProfileAnswerSerializer(serializers.ModelSerializer):
@@ -20,6 +23,12 @@ class ProfileAnswerSerializer(serializers.ModelSerializer):
         model = ProfileAnswer
         fields = ['order', 'answer', 'id']
 
+    def validate(self, attrs):
+        if not confusable_homoglyphs_check(attrs):
+
+            raise serializers.ValidationError(HOMOGLYPH_ERROR)
+        return super().validate(attrs)
+
 
 class ProfileQuestionSerializer(serializers.ModelSerializer):
     answers = ProfileAnswerSerializer(many=True)
@@ -27,6 +36,11 @@ class ProfileQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProfileQuestion
         fields = ['order', 'question', 'answers', 'id']
+
+    def validate(self, attrs):
+        if not confusable_homoglyphs_check(attrs):
+            raise serializers.ValidationError(HOMOGLYPH_ERROR)
+        return super().validate(attrs)
 
 
 class ProfileResponseSerializer(ObjectPermissionsAssignmentMixin,
@@ -61,6 +75,8 @@ class ProfileResponseSerializer(ObjectPermissionsAssignmentMixin,
         """
         check question and selected relationship
         """
+        if not confusable_homoglyphs_check(attrs):
+            raise serializers.ValidationError(HOMOGLYPH_ERROR)
         if not attrs['question'].answers.contains(attrs['selected']):
             raise serializers.ValidationError(
                 "selected answer must be for the selected question")
@@ -74,6 +90,11 @@ class MiniCandidateRankingSerializer(serializers.ModelSerializer):
     class Meta:
         model = CandidateRanking
         fields = ['id', 'rank', 'candidate',]
+
+    def validate(self, attrs):
+        if not confusable_homoglyphs_check(attrs):
+            raise serializers.ValidationError(HOMOGLYPH_ERROR)
+        return super().validate(attrs)
 
 
 class CandidateListSerializer(serializers.ModelSerializer,
@@ -106,6 +127,11 @@ class CandidateListSerializer(serializers.ModelSerializer,
 
         return perms
 
+    def validate(self, attrs):
+        if not confusable_homoglyphs_check(attrs):
+            raise serializers.ValidationError(HOMOGLYPH_ERROR)
+        return super().validate(attrs)
+
 
 class CandidateRankingSerializer(serializers.ModelSerializer,
                                  ObjectPermissionsAssignmentMixin):
@@ -132,6 +158,11 @@ class CandidateRankingSerializer(serializers.ModelSerializer,
             }
 
         return perms
+
+    def validate(self, attrs):
+        if not confusable_homoglyphs_check(attrs):
+            raise serializers.ValidationError(HOMOGLYPH_ERROR)
+        return super().validate(attrs)
 
 
 class TrainingPlanSerializer(serializers.ModelSerializer,
@@ -161,3 +192,8 @@ class TrainingPlanSerializer(serializers.ModelSerializer,
             }
 
         return perms
+
+    def validate(self, attrs):
+        if not confusable_homoglyphs_check(attrs):
+            raise serializers.ValidationError(HOMOGLYPH_ERROR)
+        return super().validate(attrs)

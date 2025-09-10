@@ -1,3 +1,6 @@
+import json
+from unittest.mock import mock_open, patch
+
 from django.core.exceptions import ValidationError
 from django.test import tag
 
@@ -6,16 +9,19 @@ from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
 
 from .test_setup import TestSetUp
 
+SKY_COLOR = "What color is the sky?"
+ERROR_MSG_VALUE = " to 0.']}"
 
 @tag('unit')
 class ModelTests(TestSetUp):
+
 
     def test_profile_question(self):
         """Test that creating a ProfileQuestion is successful"""
 
         active = True
         order = 32
-        question = "What color is the sky?"
+        question = SKY_COLOR
 
         pq = ProfileQuestion(active=active,
                              order=order,
@@ -35,9 +41,9 @@ class ModelTests(TestSetUp):
 
         active = True
         order = -32
-        question = "What color is the sky?"
+        question = SKY_COLOR
         error_msg = "{'order': ['Ensure this value is greater than or equal" +\
-            " to 0.']}"
+            ERROR_MSG_VALUE
 
         pq = ProfileQuestion(active=active,
                              order=order,
@@ -53,7 +59,7 @@ class ModelTests(TestSetUp):
 
         active = True
         order = 32
-        question = "What color is the sky?"
+        question = SKY_COLOR
         question_2 = "What color is the ground?"
         error_msg = "{'order': ['Profile question with this Order already" +\
             " exists.']}"
@@ -76,10 +82,11 @@ class ModelTests(TestSetUp):
         """Test that creating a ProfileQuestion with a non unique question
         fails"""
 
+
         active = True
         order = 32
         order_2 = 13
-        question = "What color is the sky?"
+        question = SKY_COLOR
         error_msg = "{'question': ['Profile question with this Question " + \
             "already exists.']}"
 
@@ -123,7 +130,7 @@ class ModelTests(TestSetUp):
         order = -32
         answer = "Blue"
         error_msg = "{'order': ['Ensure this value is greater than or equal" +\
-            " to 0.']}"
+            ERROR_MSG_VALUE
 
         pa = ProfileAnswer(question=self.pq,
                            order=order,
@@ -360,7 +367,7 @@ class ModelTests(TestSetUp):
         self.job.save()
         self.cl.save()
         error_msg = "{'rank': ['Ensure this value is greater than or equal" +\
-            " to 0.']}"
+            ERROR_MSG_VALUE
 
         cr = CandidateRanking(candidate_list=self.cl,
                               candidate=self.auth_user,
