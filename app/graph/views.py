@@ -1,14 +1,10 @@
 import logging
-import os
 import secrets
-import uuid
 
-from bokeh.embed import file_html, json_item
-from bokeh.models import (Circle, ColumnDataSource, GraphRenderer, HoverTool,
-                          Legend, LegendItem, SaveTool, StaticLayoutProvider)
+from bokeh.embed import file_html
+from bokeh.models import (ColumnDataSource, HoverTool, SaveTool)
 from bokeh.plotting import figure
 from bokeh.resources import CDN
-from django.conf import settings
 from numpy import arange, array, cos, pi, sin
 from pandas import DataFrame
 from rest_framework import permissions, status, views
@@ -32,13 +28,15 @@ class GraphView(views.APIView):
         scale_factor = 40
 
         users = request.query_params.getlist(
-            'users') if 'users' in request.query_params else ("User A", "User B", "User C")
+            'users') if 'users' in request.query_params else (
+            "User A", "User B", "User C")
         if len(users) > 10:
             return Response("Maximum 10 users",
                             status=status.HTTP_400_BAD_REQUEST)
         logger.info("graph %s", users)
         dict_values = {
-            'ksats': ['Knowledge of Cybersecurity', 'Ability in fork-bomb attacks', 'Skill in Kali',],
+            'ksats': ['Knowledge of Cybersecurity',
+                      'Ability in fork-bomb attacks', 'Skill in Kali',],
             # 'User A': [60, 90, 30],
             # 'User B': [10, 16, 99],
             # 'User C': [0, 33, 50],
@@ -48,9 +46,12 @@ class GraphView(views.APIView):
 
         values = DataFrame(data=dict_values)
 
-        value_colours = ("#562990", "#a1b2f8", "#07195d", "#135f9b", "#85e6f9",) if len(users) < 6 else (
-            "#562990", "#5068c3", "#a1b2f8", "#07195d", "#135f9b", "#427faf", "#77a4cd", "#85e6f9", "#fd66cd", "#519478",)
-        graph_colours = ("#aeaeb8",)
+        value_colours = (
+            ("#562990", "#a1b2f8", "#07195d", "#135f9b", "#85e6f9")
+            if len(users) < 6 else
+            ("#562990", "#5068c3", "#a1b2f8", "#07195d", "#135f9b",
+             "#427faf", "#77a4cd", "#85e6f9", "#fd66cd", "#519478")
+        )
 
         big_angle = 2 * pi / (len(values))
         angles = pi/2 - 3*big_angle/2 - array(values.index) * big_angle

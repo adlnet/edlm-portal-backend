@@ -19,6 +19,7 @@ class CourseViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = [filter.SearchFilter,]
     search_fields = ['reference',]
 
+
 class JobViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Retrieve all Job objects

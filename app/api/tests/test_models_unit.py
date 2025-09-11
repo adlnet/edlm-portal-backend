@@ -1,6 +1,3 @@
-import json
-from unittest.mock import mock_open, patch
-
 from django.core.exceptions import ValidationError
 from django.test import tag
 
@@ -12,9 +9,9 @@ from .test_setup import TestSetUp
 SKY_COLOR = "What color is the sky?"
 ERROR_MSG_VALUE = " to 0.']}"
 
+
 @tag('unit')
 class ModelTests(TestSetUp):
-
 
     def test_profile_question(self):
         """Test that creating a ProfileQuestion is successful"""
@@ -81,7 +78,6 @@ class ModelTests(TestSetUp):
     def test_profile_question_non_unique_question(self):
         """Test that creating a ProfileQuestion with a non unique question
         fails"""
-
 
         active = True
         order = 32
