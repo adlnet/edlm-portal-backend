@@ -12,11 +12,8 @@ class IsLoggedInView(APIView):
 
     def get(self, request):
         """
-        Validates that a user has a valid sessionid
+        Return the user details if logged in
+        (permission_classes checks authentication)
         """
-        # if the user is not found/authenticated (invalid session id)
-        if not request.user.is_authenticated:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
-
         return Response({"user": UserSerializer(request.user).data},
                         status=status.HTTP_200_OK)
