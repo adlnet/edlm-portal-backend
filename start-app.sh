@@ -3,8 +3,9 @@
 
 # python manage.py waitdb 
 python manage.py collectstatic --no-input
-python manage.py migrate 
-python manage.py createcachetable 
+python manage.py migrate
+python manage.py createcachetable
+mkdir -p ./media/graphs
 cd /opt/app/ 
 pwd 
 ./start-server.sh 

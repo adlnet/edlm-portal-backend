@@ -21,4 +21,6 @@ router.register('training-plans', views.TrainingPlanListViewSet,
 # The API URLs are now determined automatically by the router.
 urlpatterns = [
     path('', include(router.urls)),
+    path('course-progress/', views.GetCourseProgressView.as_view(),
+         name='course_progress'),
 ]

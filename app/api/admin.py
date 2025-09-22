@@ -145,7 +145,6 @@ class CandidateListAdmin(GuardedModelAdmin):
     list_filter = ("ranker", "role", 'competency',)
     readonly_fields = ('modified', 'created',)
     date_hierarchy = 'modified'
-    # ordering = ("question", "order",)
 
     inlines = [CandidateRankingInline]
 

@@ -2,6 +2,7 @@ import logging
 
 from rest_framework import serializers
 
+from configuration.utils.portal_utils import confusable_homoglyphs_check
 from external.models import Job
 from external.serializers import JobSerializer
 from vacancies.models import Vacancy
@@ -44,3 +45,10 @@ class VacancySerializer(serializers.ModelSerializer):
             vacancy.save()
 
         return vacancy
+
+    def validate(self, attrs):
+        if not confusable_homoglyphs_check(attrs):
+            raise serializers.ValidationError("Data contains homoglyphs and"
+                                              " can be dangerous. Check logs"
+                                              " for more details")
+        return super().validate(attrs)

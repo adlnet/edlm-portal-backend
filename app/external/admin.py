@@ -7,11 +7,10 @@ from external.models import Course, Job, LearnerRecord
 
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
-    list_display = ('reference', 'name', 'job_type')
+    list_display = ('name', 'job_type', 'reference')
     list_filter = ("job_type",)
     readonly_fields = ('modified', 'created',)
     date_hierarchy = 'modified'
-    # ordering = ("question", "order",)
 
     fieldsets = (
         (
@@ -48,8 +47,6 @@ class JobAdmin(admin.ModelAdmin):
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
     list_display = ('name', 'reference',)
-    # list_filter = ("candidate", "candidate_list",)
-    # ordering = ("candidate_list", "rank",)
     readonly_fields = ('modified', 'created',)
     date_hierarchy = 'modified'
 
@@ -87,8 +84,6 @@ class CourseAdmin(admin.ModelAdmin):
 @admin.register(LearnerRecord)
 class LearnerRecordAdmin(admin.ModelAdmin):
     list_display = ('name', 'user',)
-    # list_filter = ("candidate", "candidate_list",)
-    # ordering = ("candidate_list", "rank",)
     readonly_fields = ('modified', 'created',)
     date_hierarchy = 'modified'
 

@@ -1,8 +1,10 @@
+from django.core.validators import RegexValidator
 from django.db import models
 from django.urls import reverse
 from model_utils.models import TimeStampedModel
 
 from external.models import Job
+from portal.regex import REGEX_CHECK, REGEX_ERROR_MESSAGE
 from users.models import User
 from vacancies.models import Vacancy
 
@@ -11,7 +13,9 @@ from vacancies.models import Vacancy
 class ProfileQuestion(models.Model):
     active = models.BooleanField(default=False)
     order = models.PositiveSmallIntegerField(unique=True)
-    question = models.TextField(unique=True)
+    question = models.TextField(unique=True, validators=[
+        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+    ])
 
     class Meta:
         ordering = ['order',]
@@ -27,7 +31,9 @@ class ProfileAnswer(models.Model):
     question = models.ForeignKey(
         ProfileQuestion, on_delete=models.CASCADE, related_name='answers')
     order = models.PositiveSmallIntegerField()
-    answer = models.TextField()
+    answer = models.TextField(validators=[
+        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+    ])
 
     class Meta:
         constraints = [
@@ -66,7 +72,9 @@ class ProfileResponse(TimeStampedModel):
 class CandidateList(TimeStampedModel):
     ranker = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='lists')
-    name = models.TextField()
+    name = models.TextField(validators=[
+        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+    ])
     role = models.ForeignKey(
         Vacancy, on_delete=models.CASCADE, related_name='recommended',
         null=True, blank=True)

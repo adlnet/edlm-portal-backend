@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -69,13 +70,17 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_ALL_ORIGINS  = True
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = ['https://edlmportal.deloitteopenlxp.com',
                         'https://*.deloitteopenlxp.com', 'http://localhost']
 CSRF_COOKIE_DOMAIN = '.deloitteopenlxp.com'
 
 SECURE_SSL_REDIRECT = True
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SESSION_COOKIE_SECURE = True
+SECURE_BROWSER_XSS_FILTER = True
 SECURE_REDIRECT_EXEMPT = ['health/', 'api/health/']
 
 ROOT_URLCONF = 'portal.urls'
@@ -95,6 +100,42 @@ TEMPLATES = [
         },
     },
 ]
+
+LOG_PATH = os.environ.get('LOG_PATH')
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+
+    'loggers': {
+        'dict_config_logger': {
+            'handlers': ['console', 'file_logs'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'stream': sys.stdout,
+            'formatter': 'simpleRe',
+        },
+        'file_logs': {
+            'level': 'WARNING',
+            'class': 'logging.FileHandler',
+            'filename': LOG_PATH,
+            'formatter': 'simpleRe',
+        },
+    },
+
+    'formatters': {
+        'simpleRe': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        }
+    }
+}
 
 WSGI_APPLICATION = 'portal.wsgi.application'
 
@@ -145,15 +186,17 @@ USE_I18N = True
 
 USE_TZ = True
 
-# Add CORS Variables
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_CREDENTIALS = True
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+MEDIA_URL = 'media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+if os.environ.get('FORCE_SCRIPT_NAME') is not None:
+    FORCE_SCRIPT_NAME = os.environ.get('FORCE_SCRIPT_NAME')
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -201,3 +244,21 @@ elif os.environ.get('TOKEN_LIFE_FOREVER') is not None:
 if os.environ.get('TOKEN_COUNT_PER_USER') is not None:
     REST_KNOX['TOKEN_LIMIT_PER_USER'] = int(
         os.environ.get('TOKEN_COUNT_PER_USER'))
+
+REST_KNOX['SECURE_HASH_ALGORITHM'] = 'hashlib.sha3_512'
+
+# xAPI Statement Settings
+
+# toggle setting actor from JWT, default to false
+XAPI_USE_JWT = os.getenv('XAPI_USE_JWT', 'false').lower() == 'true'
+
+# Set $.actor.account.homePage on statements.
+XAPI_ACTOR_ACCOUNT_HOMEPAGE = os.environ.get('XAPI_ACTOR_ACCOUNT_HOMEPAGE',
+                                             'https://example.com')
+
+# Define fields from JWT to use for $.actor.account.name on statements in
+# descending order of preference.
+XAPI_ACTOR_ACCOUNT_NAME_JWT_FIELDS = [
+    field.strip()
+    for field in os.environ.get('XAPI_ACTOR_ACCOUNT_NAME_JWT_FIELDS', 'activecac,preferred_username').split(',')
+]
