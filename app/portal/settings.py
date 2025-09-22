@@ -247,23 +247,6 @@ if os.environ.get('TOKEN_COUNT_PER_USER') is not None:
 
 REST_KNOX['SECURE_HASH_ALGORITHM'] = 'hashlib.sha3_512'
 
-JWT_PREFERRED_USERNAME_FIELD = "preferred_username"
-
-if os.environ.get('STAFF_FLAG') is not None:
-    USER_STAFF_FLAG = os.environ.get('STAFF_FLAG')
-
-if os.environ.get('STAFF_VALUE') is not None:
-    USER_STAFF_VALUE = os.environ.get('STAFF_VALUE')
-
-if os.environ.get('SU_FLAG') is not None:
-    USER_SUPERUSER_FLAG = os.environ.get('SU_FLAG')
-
-if os.environ.get('SU_VALUE') is not None:
-    USER_SUPERUSER_VALUE = os.environ.get('SU_VALUE')
-
-if os.environ.get('REQUIRE_JWT') is not None:
-    REQUIRE_JWT = True
-
 # xAPI Statement Settings
 
 # toggle setting actor from JWT, default to false
