@@ -55,3 +55,39 @@ class Job(TimeStampedModel):
 
     def get_absolute_url(self):
         return reverse("jobs-detail", kwargs={"pk": self.pk})
+
+
+class Competency(TimeStampedModel):
+    name = models.CharField(max_length=255, blank=True, validators=[
+        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+    ])
+    reference = models.CharField(max_length=255, unique=True, primary_key=True,
+                                 validators=[
+                                     RegexValidator(
+                                         regex=REGEX_CHECK,
+                                         message=REGEX_ERROR_MESSAGE),
+                                 ])
+
+    def __str__(self):
+        return f'{self.name}'
+
+    def get_absolute_url(self):
+        return reverse("competencies-detail", kwargs={"pk": self.pk})
+
+
+class Ksa(TimeStampedModel):
+    name = models.CharField(max_length=255, blank=True, validators=[
+        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+    ])
+    reference = models.CharField(max_length=255, unique=True, primary_key=True,
+                                 validators=[
+                                     RegexValidator(
+                                         regex=REGEX_CHECK,
+                                         message=REGEX_ERROR_MESSAGE),
+                                 ])
+
+    def __str__(self):
+        return f'{self.name}'
+
+    def get_absolute_url(self):
+        return reverse("ksas-detail", kwargs={"pk": self.pk})
