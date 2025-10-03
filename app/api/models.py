@@ -1,6 +1,8 @@
+from django.contrib.postgres.fields import ArrayField
 from django.core.validators import RegexValidator
 from django.db import models
 from django.urls import reverse
+from model_utils import Choices
 from model_utils.models import TimeStampedModel
 
 from external.models import Competency, Job, Ksa
@@ -141,14 +143,14 @@ class TrainingPlan(TimeStampedModel):
 
 class LearningPlan(TimeStampedModel):
     """Model to store learning plans detail"""
+    TIMEFRAME_CHOICES = Choices('Short-term (1-2 years)',
+                                'Long-term (3-4 years)')
     learner = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='learning_plans')
     name = models.TextField(validators=[
         RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
     ])
-    timeframe = models.CharField(max_length=50, validators=[
-        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
-    ])
+    timeframe = models.CharField(max_length=50, choices=TIMEFRAME_CHOICES)
 
     def __str__(self):
         return f'{self.name} - {self.learner} ({self.timeframe})'
@@ -159,22 +161,22 @@ class LearningPlan(TimeStampedModel):
 
 class LearningPlanCompetency(TimeStampedModel):
     """Model to store competencies for a learning plan"""
+    PRIORITY_CHOICES = Choices('Highest', 'High', 'Medium', 'Low', 'Lowest')
     learning_plan = models.ForeignKey(
         LearningPlan, on_delete=models.CASCADE, related_name='competencies')
     eccr_competency = models.ForeignKey(
         Competency, on_delete=models.CASCADE,
-        related_name='learning_plans_competencies',
-        null=True, blank=True)
-    plan_competency_name = models.CharField(max_length=255, validators=[
-        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
-    ])
-    priority = models.CharField(max_length=20, validators=[
-        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
-    ])
+        related_name='learning_plans_competencies')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES)
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         self.learning_plan.save(update_fields=['modified',])
+
+    # Return the name of the competency
+    @property
+    def plan_competency_name(self):
+        return self.eccr_competency.name
 
     def __str__(self):
         return (f'{self.plan_competency_name} - '
@@ -195,9 +197,34 @@ class LearningPlanGoal(TimeStampedModel):
     timeline = models.CharField(max_length=20, validators=[
         RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
     ])
-    # store a list of selected choices and any 'other' text
-    resources_support = models.JSONField(default=dict, blank=True)
-    obstacles = models.JSONField(default=dict, blank=True)
+
+    # store a list of selected choices
+    resources_support = ArrayField(
+        models.CharField(
+            max_length=500,
+            validators=[RegexValidator(
+                regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE)],
+        ),
+        default=list,
+        blank=True,
+    )
+
+    obstacles = ArrayField(
+        models.CharField(
+            max_length=500,
+            validators=[RegexValidator(
+                regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE)],
+        ),
+        default=list,
+        blank=True,
+    )
+
+    resources_support_other = models.TextField(blank=True, validators=[
+        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+    ])
+    obstacles_other = models.TextField(blank=True, validators=[
+        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+    ])
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -216,17 +243,18 @@ class LearningPlanGoalKsa(TimeStampedModel):
     plan_goal = models.ForeignKey(
         LearningPlanGoal, on_delete=models.CASCADE, related_name='ksas')
     eccr_ksa = models.ForeignKey(
-        Ksa, on_delete=models.CASCADE, related_name='learning_plans_ksas',
-        null=True, blank=True)
-    ksa_name = models.CharField(max_length=255, validators=[
-        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
-    ])
+        Ksa, on_delete=models.CASCADE, related_name='learning_plans_ksas')
     current_proficiency = models.CharField(max_length=20, validators=[
         RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
     ])
     target_proficiency = models.CharField(max_length=20, validators=[
         RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
     ])
+
+    # Return the name of the KSA
+    @property
+    def ksa_name(self):
+        return self.eccr_ksa.name
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
