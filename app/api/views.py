@@ -10,11 +10,18 @@ from rest_framework.views import APIView
 from rest_framework_guardian import filters
 
 from api.models import (CandidateList, CandidateRanking, ProfileQuestion,
-                        ProfileResponse, TrainingPlan)
+                        ProfileResponse, TrainingPlan, LearningPlan,
+                        LearningPlanCompetency, LearningPlanGoal,
+                        LearningPlanGoalKsa)
 from api.serializers import (CandidateListSerializer,
                              CandidateRankingSerializer,
                              ProfileQuestionSerializer,
-                             ProfileResponseSerializer, TrainingPlanSerializer)
+                             ProfileResponseSerializer,
+                             TrainingPlanSerializer,
+                             LearningPlanSerializer,
+                             LearningPlanCompetencySerializer,
+                             LearningPlanGoalSerializer,
+                             LearningPlanGoalKsaSerializer)
 from api.utils.xapi_utils import (COURSE_PROGRESS_VERBS,
                                   filter_courses_by_exclusion,
                                   get_lrs_statements,
@@ -250,3 +257,63 @@ class GetCourseProgressView(APIView):
             return Response({'message': 'An error occurred while'
                             ' fetching user course progress'},
                             status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LearningPlanGoalKsaViewSet(viewsets.ModelViewSet):
+    """Viewset for Learning Plan Goal KSAs."""
+    serializer_class = LearningPlanGoalKsaSerializer
+
+    def get_queryset(self):
+        """
+        This view should return a list of all the
+        learning plan goal KSAs for the currently authenticated user
+        """
+        user = self.request.user
+        return LearningPlanGoalKsa.objects.filter(
+            plan_goal__plan_competency__learning_plan__learner=(
+                user
+            )
+        )
+
+
+class LearningPlanGoalViewSet(viewsets.ModelViewSet):
+    """Viewset for Learning Plan Goals"""
+    serializer_class = LearningPlanGoalSerializer
+
+    def get_queryset(self):
+        """
+        This view should return a list of all the goals
+        for the currently authenticated user
+        """
+        user = self.request.user
+        return LearningPlanGoal.objects.filter(
+            plan_competency__learning_plan__learner=user
+        )
+
+
+class LearningPlanCompetencyViewSet(viewsets.ModelViewSet):
+    """Viewset for Learning Plan Competencies"""
+    serializer_class = LearningPlanCompetencySerializer
+
+    def get_queryset(self):
+        """
+        This view should return a list of all the competencies
+        for the currently authenticated user
+        """
+        user = self.request.user
+        return LearningPlanCompetency.objects.filter(
+            learning_plan__learner=user
+        )
+
+
+class LearningPlanViewSet(viewsets.ModelViewSet):
+    """Viewset for Learning Plans"""
+    serializer_class = LearningPlanSerializer
+
+    def get_queryset(self):
+        """
+        This view should return a list of all the learning plans
+        for the currently authenticated user
+        """
+        user = self.request.user
+        return LearningPlan.objects.filter(learner=user)
