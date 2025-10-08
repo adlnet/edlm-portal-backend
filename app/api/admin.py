@@ -3,7 +3,10 @@ from django.utils.translation import ngettext
 from guardian.admin import GuardedModelAdmin
 
 from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
-                        ProfileQuestion, ProfileResponse, TrainingPlan)
+                        ProfileQuestion, ProfileResponse, TrainingPlan,
+                        LearningPlan, LearningPlanCompetency, LearningPlanGoal,
+                        LearningPlanGoalKsa)
+
 
 # Register your models here.
 
@@ -251,3 +254,31 @@ class TrainingPlanAdmin(GuardedModelAdmin):
             }
         ),
     )
+
+
+@admin.register(LearningPlan)
+class LearningPlanAdmin(GuardedModelAdmin):
+    list_display = ('name', 'learner', 'timeframe', 'modified')
+    list_filter = ('learner', 'timeframe', 'modified')
+
+
+@admin.register(LearningPlanCompetency)
+class LearningPlanCompetencyAdmin(GuardedModelAdmin):
+    list_display = ('learning_plan', 'plan_competency_name',
+                    'priority', 'modified')
+    list_filter = ('learning_plan__learner', 'priority', 'modified')
+
+
+@admin.register(LearningPlanGoal)
+class LearningPlanGoalAdmin(GuardedModelAdmin):
+    list_display = ('goal_name', 'plan_competency', 'timeline', 'modified')
+    list_filter = ('plan_competency__learning_plan__learner',
+                   'timeline', 'modified')
+
+
+@admin.register(LearningPlanGoalKsa)
+class LearningPlanGoalKsaAdmin(GuardedModelAdmin):
+    list_display = ('ksa_name', 'plan_goal', 'current_proficiency',
+                    'target_proficiency', 'modified')
+    list_filter = ('plan_goal__plan_competency__learning_plan__learner',
+                   'current_proficiency', 'target_proficiency', 'modified')
