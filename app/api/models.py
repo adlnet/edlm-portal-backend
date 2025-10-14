@@ -266,5 +266,5 @@ class LearningPlanGoalKsa(TimeStampedModel):
                 f'({self.current_proficiency} - {self.target_proficiency})')
 
     def get_absolute_url(self):
-        return reverse("api:learning-plan-goal-ksa-detail",
+        return reverse("api:learning-plan-goal-ksas-detail",
                        kwargs={"pk": self.pk})

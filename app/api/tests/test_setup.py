@@ -1,10 +1,13 @@
 from django.test import override_settings
 from rest_framework.test import APITestCase
 
-from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
-                        ProfileQuestion, ProfileResponse, TrainingPlan)
+from api.models import (CandidateList, CandidateRanking, LearningPlan,
+                        LearningPlanCompetency, LearningPlanGoal,
+                        LearningPlanGoalKsa, ProfileAnswer,
+                        ProfileQuestion, ProfileResponse,
+                        TrainingPlan)
 from configuration.models import Configuration
-from external.models import Job
+from external.models import Competency, Job, Ksa
 from users.models import User
 
 
@@ -98,6 +101,65 @@ class TestSetUp(APITestCase):
         self.tp = TrainingPlan(trainee=self.basic_user,
                                planner=self.auth_user,
                                role=self.job)
+
+        # Learning Plan
+        name = "Test Learning Plan"
+        timeframe = "Short-term (1-2 years)"
+        self.learning_plan = LearningPlan(
+            learner=self.auth_user,
+            name=name,
+            timeframe=timeframe
+        )
+
+        # Learning Plan Competency
+        name = "Test Competency"
+        reference = "http://test.example.com/testframework/111"
+        self.competency = Competency(
+            name=name,
+            reference=reference
+        )
+
+        priority = "High"
+        self.learning_plan_competency = LearningPlanCompetency(
+            learning_plan=self.learning_plan,
+            eccr_competency=self.competency,
+            priority=priority
+        )
+
+        # Learning Plan Goal
+        goal_name = "Test Goal"
+        timeline = "3 months"
+        resources_support = ["test_resource1", "test_resource2"]
+        obstacles = ["test_obstacle1", "test_obstacle2"]
+        resources_support_other = "Other test resource"
+        obstacles_other = "Other test obstacle"
+        self.learning_plan_goal = LearningPlanGoal(
+            plan_competency=self.learning_plan_competency,
+            goal_name=goal_name,
+            timeline=timeline,
+            resources_support=resources_support,
+            obstacles=obstacles,
+            resources_support_other=resources_support_other,
+            obstacles_other=obstacles_other
+        )
+
+        # Learning Plan Goal KSA
+        name = "Test KSA"
+        reference = "http://test.example.com/testframework/ksa/111"
+        self.ksa = Ksa(
+            name=name,
+            reference=reference
+        )
+
+        current_proficiency = "test_low"
+        target_proficiency = "test_medium"
+        self.learning_plan_goal_ksa = LearningPlanGoalKsa(
+            plan_goal=self.learning_plan_goal,
+            eccr_ksa=self.ksa,
+            current_proficiency=current_proficiency,
+            target_proficiency=target_proficiency
+        )
+
         # Configuration
         self.config = Configuration(
             target_xds_api="test-xds",
