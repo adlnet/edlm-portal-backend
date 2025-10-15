@@ -228,7 +228,7 @@ class LearningPlanGoal(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        self.plan_competency.learning_plan.save(update_fields=['modified'])
+        self.plan_competency.save(update_fields=['modified',])
 
     def __str__(self):
         return f'{self.goal_name} - {self.plan_competency} ({self.timeline})'
@@ -258,8 +258,7 @@ class LearningPlanGoalKsa(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        (self.plan_goal.plan_competency.learning_plan
-         .save(update_fields=['modified']))
+        self.plan_goal.save(update_fields=['modified',])
 
     def __str__(self):
         return (f'{self.ksa_name} - {self.plan_goal}'
