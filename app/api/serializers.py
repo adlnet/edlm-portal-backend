@@ -253,6 +253,31 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
 
         return learning_plan_goal_ksa
 
+    def update(self, instance, validated_data):
+        """
+        Update based on external reference/name
+        """
+        ksa_data = {}
+        if 'ksa_external_reference' in validated_data and \
+           'ksa_external_name' in validated_data:
+            ksa_data = {
+                'reference': validated_data.pop('ksa_external_reference'),
+                'name': validated_data.pop('ksa_external_name')
+            }
+
+        if ksa_data:
+            ksa, created = Ksa.objects.get_or_create(
+                reference=ksa_data['reference'],
+                defaults=ksa_data
+            )
+            validated_data['eccr_ksa'] = ksa
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
+
     def get_permissions_map(self, created):
         perms = {}
         if not created:
@@ -384,6 +409,33 @@ class LearningPlanCompetencySerializer(serializers.ModelSerializer,
         )
 
         return learning_plan_competency
+
+    def update(self, instance, validated_data):
+        """
+        Update based on external reference/name
+        """
+        competency_data = {}
+        if 'competency_external_reference' in validated_data and \
+           'competency_external_name' in validated_data:
+            competency_data = {
+                'reference': validated_data.pop(
+                    'competency_external_reference'),
+                'name': validated_data.pop(
+                    'competency_external_name')
+            }
+
+        if competency_data:
+            competency, created = Competency.objects.get_or_create(
+                reference=competency_data['reference'],
+                defaults=competency_data
+            )
+            validated_data['eccr_competency'] = competency
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
 
     def get_permissions_map(self, created):
         perms = {}
