@@ -438,13 +438,19 @@ class ViewTests(TestSetUp):
         self.assertEqual(self.learning_plan_competency.priority,
                          responseDict['priority'])
 
-    def test_learning_plan_competency_requests_post(self):
+    @patch('api.serializers.get_eccr_item')
+    def test_learning_plan_competency_requests_post(self, mock_eccr):
         """Test that making a post request to the learning plan competency
         api with valid data creates a learning plan competency"""
+        mock_eccr.return_value.status_code = 200
+        mock_eccr.return_value.json.return_value = {
+            "test": "test1"
+        }
+
         self.learning_plan.save()
         priority = "Low"
         com_name = "test competency"
-        comp_ref = "http://test.example.com/framework/test"
+        comp_ref = "testFramework/test-uuid"
 
         url = reverse('api:learning-plan-competencies-list')
         self.client.login(username=self.auth_email,
@@ -581,9 +587,15 @@ class ViewTests(TestSetUp):
         self.assertEqual(self.learning_plan_goal_ksa.current_proficiency,
                          responseDict['current_proficiency'])
 
-    def test_learning_plan_goal_ksa_requests_post(self):
+    @patch('api.serializers.get_eccr_item')
+    def test_learning_plan_goal_ksa_requests_post(self, mock_eccr):
         """Test that making a post request to the learning plan
         goal ksa api with valid data creates a learning plan goal ksa"""
+        mock_eccr.return_value.status_code = 200
+        mock_eccr.return_value.json.return_value = {
+            "test": "test2"
+        }
+
         self.learning_plan.save()
         self.competency.save()
         self.learning_plan_competency.save()
@@ -592,7 +604,7 @@ class ViewTests(TestSetUp):
         current_proficiency = "Intermediate"
         target_proficiency = "Advanced"
         ksa_name = "test ksa"
-        ksa_reference = "http://test.example.com/framework/ksa/test"
+        ksa_reference = "framework1/ksa-uuid-test"
 
         url = reverse('api:learning-plan-goal-ksas-list')
         self.client.login(username=self.auth_email,

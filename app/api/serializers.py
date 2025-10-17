@@ -11,12 +11,17 @@ from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
                         LearningPlanGoalKsa)
 from configuration.utils.portal_utils import confusable_homoglyphs_check
 from external.models import Competency, Job, Ksa
+from external.utils.eccr_utils import get_eccr_item
 from users.models import User
 from vacancies.models import Vacancy
 
 logger = logging.getLogger(__name__)
 HOMOGLYPH_ERROR = "Data contains homoglyphs and can be dangerous. Check" + \
     " logs for more details"
+ECCR_VALIDATION_ERROR = "UUID does not exist in ECCR, logs for more details."
+ECCR_VALIDATION_OTHER_ERROR = "ECCR API error, logs for more details."
+ECCR_JSON_ERROR = "ECCR returned response is not JSON." + \
+    " Check logs for more details."
 
 
 class ProfileAnswerSerializer(serializers.ModelSerializer):
@@ -227,23 +232,54 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
 
+    def _validate_ksa_from_eccr(self, ksa_reference):
+        """Validate against KSA reference from ECCR"""
+        # Input format: itemType/itemUUID
+        ksa_type, ksa_id = ksa_reference.split('/', 1)
+        resp = get_eccr_item(
+            id=ksa_id,
+            item_type=ksa_type
+        )
+
+        if resp.status_code == 200:
+            try:
+                return resp.json()
+            except ValueError:
+                raise serializers.ValidationError(
+                    ECCR_JSON_ERROR
+                )
+        elif resp.status_code == 404:
+            raise serializers.ValidationError(
+                ECCR_VALIDATION_ERROR
+            )
+        else:
+            raise serializers.ValidationError(
+                ECCR_VALIDATION_OTHER_ERROR
+            )
+
     def create(self, validated_data):
         """
         Create or link to ECCR External KSA
-        based on external reference/name
+        based on external reference
         """
         ksa_data = {}
         if 'ksa_external_reference' in validated_data and \
            'ksa_external_name' in validated_data:
+            reference = validated_data['ksa_external_reference']
+            data_exists = Ksa.objects.filter(reference=reference).exists()
+
+            if not data_exists:
+                self._validate_ksa_from_eccr(reference)
+
             ksa_data = {
                 'reference': validated_data.pop('ksa_external_reference'),
                 'name': validated_data.pop('ksa_external_name')
             }
 
         if ksa_data:
-            ksa, created = Ksa.objects.get_or_create(
+            ksa, created = Ksa.objects.update_or_create(
                 reference=ksa_data['reference'],
-                defaults=ksa_data
+                defaults={'name': ksa_data['name']}
             )
             validated_data['eccr_ksa'] = ksa
 
@@ -255,20 +291,26 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
 
     def update(self, instance, validated_data):
         """
-        Update based on external reference/name
+        Update based on external reference
         """
         ksa_data = {}
         if 'ksa_external_reference' in validated_data and \
            'ksa_external_name' in validated_data:
+            reference = validated_data['ksa_external_reference']
+            data_exists = Ksa.objects.filter(reference=reference).exists()
+
+            if not data_exists:
+                self._validate_ksa_from_eccr(reference)
+
             ksa_data = {
                 'reference': validated_data.pop('ksa_external_reference'),
                 'name': validated_data.pop('ksa_external_name')
             }
 
         if ksa_data:
-            ksa, created = Ksa.objects.get_or_create(
+            ksa, created = Ksa.objects.update_or_create(
                 reference=ksa_data['reference'],
-                defaults=ksa_data
+                defaults={'name': ksa_data['name']}
             )
             validated_data['eccr_ksa'] = ksa
 
@@ -382,14 +424,46 @@ class LearningPlanCompetencySerializer(serializers.ModelSerializer,
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
 
+    def _validate_competency_from_eccr(self, comp_reference):
+        """Validate against competency reference from ECCR"""
+        # Input format: itemType/itemUUID
+        comp_type, comp_id = comp_reference.split('/', 1)
+        resp = get_eccr_item(
+            id=comp_id,
+            item_type=comp_type
+        )
+
+        if resp.status_code == 200:
+            try:
+                return resp.json()
+            except ValueError:
+                raise serializers.ValidationError(
+                    ECCR_JSON_ERROR
+                )
+        elif resp.status_code == 404:
+            raise serializers.ValidationError(
+                ECCR_VALIDATION_ERROR
+            )
+        else:
+            raise serializers.ValidationError(
+                ECCR_VALIDATION_OTHER_ERROR
+            )
+
     def create(self, validated_data):
         """
         Create or link to ECCR External Competency
-        based on external reference/name
+        based on external reference
         """
         competency_data = {}
         if 'competency_external_reference' in validated_data and \
            'competency_external_name' in validated_data:
+            reference = validated_data['competency_external_reference']
+            data_exists = Competency.objects.filter(
+                reference=reference).exists()
+
+            if not data_exists:
+                self._validate_competency_from_eccr(reference)
+
             competency_data = {
                 'reference': validated_data.pop(
                     'competency_external_reference'),
@@ -398,9 +472,9 @@ class LearningPlanCompetencySerializer(serializers.ModelSerializer,
             }
 
         if competency_data:
-            competency, created = Competency.objects.get_or_create(
+            competency, created = Competency.objects.update_or_create(
                 reference=competency_data['reference'],
-                defaults=competency_data
+                defaults={'name': competency_data['name']}
             )
             validated_data['eccr_competency'] = competency
 
@@ -412,11 +486,18 @@ class LearningPlanCompetencySerializer(serializers.ModelSerializer,
 
     def update(self, instance, validated_data):
         """
-        Update based on external reference/name
+        Update based on external reference
         """
         competency_data = {}
         if 'competency_external_reference' in validated_data and \
            'competency_external_name' in validated_data:
+            reference = validated_data['competency_external_reference']
+            data_exists = Competency.objects.filter(
+                reference=reference).exists()
+
+            if not data_exists:
+                self._validate_competency_from_eccr(reference)
+
             competency_data = {
                 'reference': validated_data.pop(
                     'competency_external_reference'),
@@ -425,9 +506,9 @@ class LearningPlanCompetencySerializer(serializers.ModelSerializer,
             }
 
         if competency_data:
-            competency, created = Competency.objects.get_or_create(
+            competency, created = Competency.objects.update_or_create(
                 reference=competency_data['reference'],
-                defaults=competency_data
+                defaults={'name': competency_data['name']}
             )
             validated_data['eccr_competency'] = competency
 
