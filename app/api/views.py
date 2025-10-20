@@ -261,59 +261,27 @@ class GetCourseProgressView(APIView):
 
 class LearningPlanGoalKsaViewSet(viewsets.ModelViewSet):
     """Viewset for Learning Plan Goal KSAs."""
+    queryset = LearningPlanGoalKsa.objects.all()
     serializer_class = LearningPlanGoalKsaSerializer
-
-    def get_queryset(self):
-        """
-        This view should return a list of all the
-        learning plan goal KSAs for the currently authenticated user
-        """
-        user = self.request.user
-        return LearningPlanGoalKsa.objects.filter(
-            plan_goal__plan_competency__learning_plan__learner=(
-                user
-            )
-        )
+    filter_backends = [filters.ObjectPermissionsFilter,]
 
 
 class LearningPlanGoalViewSet(viewsets.ModelViewSet):
     """Viewset for Learning Plan Goals"""
+    queryset = LearningPlanGoal.objects.all()
     serializer_class = LearningPlanGoalSerializer
-
-    def get_queryset(self):
-        """
-        This view should return a list of all the goals
-        for the currently authenticated user
-        """
-        user = self.request.user
-        return LearningPlanGoal.objects.filter(
-            plan_competency__learning_plan__learner=user
-        )
+    filter_backends = [filters.ObjectPermissionsFilter,]
 
 
 class LearningPlanCompetencyViewSet(viewsets.ModelViewSet):
     """Viewset for Learning Plan Competencies"""
+    queryset = LearningPlanCompetency.objects.all()
     serializer_class = LearningPlanCompetencySerializer
-
-    def get_queryset(self):
-        """
-        This view should return a list of all the competencies
-        for the currently authenticated user
-        """
-        user = self.request.user
-        return LearningPlanCompetency.objects.filter(
-            learning_plan__learner=user
-        )
+    filter_backends = [filters.ObjectPermissionsFilter,]
 
 
 class LearningPlanViewSet(viewsets.ModelViewSet):
     """Viewset for Learning Plans"""
+    queryset = LearningPlan.objects.all()
     serializer_class = LearningPlanSerializer
-
-    def get_queryset(self):
-        """
-        This view should return a list of all the learning plans
-        for the currently authenticated user
-        """
-        user = self.request.user
-        return LearningPlan.objects.filter(learner=user)
+    filter_backends = [DjangoFilterBackend, filters.ObjectPermissionsFilter,]
