@@ -284,4 +284,4 @@ class LearningPlanViewSet(viewsets.ModelViewSet):
     """Viewset for Learning Plans"""
     queryset = LearningPlan.objects.all()
     serializer_class = LearningPlanSerializer
-    filter_backends = [DjangoFilterBackend, filters.ObjectPermissionsFilter,]
+    filter_backends = [filters.ObjectPermissionsFilter,]
