@@ -444,7 +444,9 @@ class ViewTests(TestSetUp):
         api with valid data creates a learning plan competency"""
         mock_eccr.return_value.status_code = 200
         mock_eccr.return_value.json.return_value = {
-            "test": "test1"
+            "name": {
+                "@value": "test competency"
+            }
         }
 
         self.learning_plan.save()
@@ -458,7 +460,6 @@ class ViewTests(TestSetUp):
         response = self.client.post(
             url, {'learning_plan': self.learning_plan.pk,
                   'priority': priority,
-                  'competency_external_name': com_name,
                   'competency_external_reference': comp_ref})
         responseDict = json.loads(response.content)
 
@@ -593,7 +594,9 @@ class ViewTests(TestSetUp):
         goal ksa api with valid data creates a learning plan goal ksa"""
         mock_eccr.return_value.status_code = 200
         mock_eccr.return_value.json.return_value = {
-            "test": "test2"
+            "name": {
+                "@value": "test ksa"
+            }
         }
 
         self.learning_plan.save()
@@ -613,7 +616,6 @@ class ViewTests(TestSetUp):
             url, {'plan_goal': self.learning_plan_goal.pk,
                   'current_proficiency': current_proficiency,
                   'target_proficiency': target_proficiency,
-                  'ksa_external_name': ksa_name,
                   'ksa_external_reference': ksa_reference})
         responseDict = json.loads(response.content)
 
