@@ -13,6 +13,10 @@ router.register(r'jobs', views.JobViewSet,
                 basename='jobs')
 router.register('learners', views.LearnerRecordViewSet,
                 basename='learners')
+router.register(r'competencies', views.CompetencyViewSet,
+                basename='competencies')
+router.register(r'ksas', views.KsaViewSet,
+                basename='ksas')
 
 # The API URLs are now determined automatically by the router.
 urlpatterns = [

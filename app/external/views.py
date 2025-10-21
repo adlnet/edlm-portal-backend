@@ -3,8 +3,9 @@ import logging
 from rest_framework import filters as filter
 from rest_framework import viewsets
 
-from external.models import Course, Job, LearnerRecord
-from external.serializers import (CourseSerializer, JobSerializer,
+from external.models import Competency, Course, Job, Ksa, LearnerRecord
+from external.serializers import (CompetencySerializer, CourseSerializer,
+                                  JobSerializer,  KsaSerializer,
                                   LearnerRecordSerializer)
 
 logger = logging.getLogger(__name__)
@@ -38,3 +39,23 @@ class LearnerRecordViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = LearnerRecordSerializer
     filter_backends = [filter.SearchFilter,]
     search_fields = ['user__email',]
+
+
+class CompetencyViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Retrieve all Competency objects
+    """
+    queryset = Competency.objects.all()
+    serializer_class = CompetencySerializer
+    filter_backends = [filter.SearchFilter,]
+    search_fields = ['reference',]
+
+
+class KsaViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Retrieve all Ksa objects
+    """
+    queryset = Ksa.objects.all()
+    serializer_class = KsaSerializer
+    filter_backends = [filter.SearchFilter,]
+    search_fields = ['reference',]

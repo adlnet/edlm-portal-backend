@@ -1,8 +1,10 @@
 from django.core.exceptions import ValidationError
 from django.test import tag
 
-from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
-                        ProfileQuestion, ProfileResponse)
+from api.models import (CandidateList, CandidateRanking, LearningPlan,
+                        LearningPlanCompetency, LearningPlanGoal,
+                        LearningPlanGoalKsa, ProfileAnswer, ProfileQuestion,
+                        ProfileResponse)
 
 from .test_setup import TestSetUp
 
@@ -374,3 +376,120 @@ class ModelTests(TestSetUp):
         self.assertEqual(CandidateRanking.objects.all().count(), 0)
         self.assertEqual(self.cl.rankings.count(), 0)
         self.assertEqual(self.auth_user.rankings.count(), 0)
+
+    def test_learning_plan(self):
+        """Test that creating a Learning Plan is successful"""
+
+        name = "Test Learning Plan"
+        timeframe = "Short-term (1-2 years)"
+
+        lp = LearningPlan(name=name,
+                          timeframe=timeframe,
+                          learner=self.auth_user)
+        lp.full_clean()
+        lp.save()
+
+        self.assertEqual(lp.name, name)
+        self.assertEqual(lp.timeframe, timeframe)
+        self.assertEqual(lp.learner, self.auth_user)
+        self.assertIn(name, str(lp))
+        self.assertIn(str(self.auth_user), str(lp))
+        self.assertIn(timeframe, str(lp))
+        self.assertEqual(LearningPlan.objects.all().count(), 1)
+        self.assertEqual(self.auth_user.learning_plans.count(), 1)
+        self.assertIn(str(lp.pk), lp.get_absolute_url())
+
+    def test_learning_plan_competency(self):
+        """Test that creating a Learning Plan Competency is successful"""
+
+        priority = "High"
+        self.learning_plan.save()
+        self.competency.save()
+
+        lpc = LearningPlanCompetency(learning_plan=self.learning_plan,
+                                     eccr_competency=self.competency,
+                                     priority=priority)
+        lpc.full_clean()
+        lpc.save()
+
+        self.assertEqual(lpc.learning_plan, self.learning_plan)
+        self.assertEqual(lpc.eccr_competency, self.competency)
+        self.assertEqual(lpc.priority, priority)
+        self.assertIn(str(self.learning_plan), str(lpc))
+        self.assertIn(str(self.competency), str(lpc))
+        self.assertIn(priority, str(lpc))
+        self.assertEqual(LearningPlanCompetency.objects.all().count(), 1)
+        self.assertEqual(self.learning_plan.competencies.count(), 1)
+        self.assertEqual(self.competency.
+                         learning_plans_competencies.count(), 1)
+        self.assertIn(str(lpc.pk), lpc.get_absolute_url())
+
+    def test_learning_plan_goal(self):
+        """Test that creating a Learning Plan Goal is successful"""
+
+        goal_name = "Test Goal"
+        timeline = "3 months"
+        resources_support = ["test_resource1", "test_resource2"]
+        obstacles = ["test_obstacle1", "test_obstacle2"]
+        resources_support_other = "Other test resource"
+        obstacles_other = "Other test obstacle"
+
+        self.learning_plan.save()
+        self.competency.save()
+        self.learning_plan_competency.save()
+
+        lpg = LearningPlanGoal(plan_competency=self.learning_plan_competency,
+                               goal_name=goal_name,
+                               timeline=timeline,
+                               resources_support=resources_support,
+                               obstacles=obstacles,
+                               resources_support_other=resources_support_other,
+                               obstacles_other=obstacles_other)
+        lpg.full_clean()
+        lpg.save()
+
+        self.assertEqual(lpg.plan_competency, self.learning_plan_competency)
+        self.assertEqual(lpg.goal_name, goal_name)
+        self.assertEqual(lpg.timeline, timeline)
+        self.assertEqual(lpg.resources_support, resources_support)
+        self.assertEqual(lpg.obstacles, obstacles)
+        self.assertEqual(lpg.resources_support_other, resources_support_other)
+        self.assertEqual(lpg.obstacles_other, obstacles_other)
+        self.assertIn(str(self.learning_plan_competency), str(lpg))
+        self.assertIn(goal_name, str(lpg))
+        self.assertIn(timeline, str(lpg))
+        self.assertEqual(LearningPlanGoal.objects.all().count(), 1)
+        self.assertEqual(self.learning_plan_competency.goals.count(), 1)
+        self.assertIn(str(lpg.pk), lpg.get_absolute_url())
+
+    def test_learning_plan_goal_ksa(self):
+        """Test that creating a Learning Plan Goal KSA is successful"""
+
+        current_proficiency = "test_low"
+        target_proficiency = "test_medium"
+
+        self.learning_plan.save()
+        self.competency.save()
+        self.learning_plan_competency.save()
+        self.learning_plan_goal.save()
+        self.ksa.save()
+
+        lpgk = LearningPlanGoalKsa(plan_goal=self.learning_plan_goal,
+                                   eccr_ksa=self.ksa,
+                                   current_proficiency=current_proficiency,
+                                   target_proficiency=target_proficiency)
+        lpgk.full_clean()
+        lpgk.save()
+
+        self.assertEqual(lpgk.plan_goal, self.learning_plan_goal)
+        self.assertEqual(lpgk.eccr_ksa, self.ksa)
+        self.assertEqual(lpgk.current_proficiency, current_proficiency)
+        self.assertEqual(lpgk.target_proficiency, target_proficiency)
+        self.assertIn(str(self.learning_plan_goal), str(lpgk))
+        self.assertIn(str(self.ksa), str(lpgk))
+        self.assertIn(current_proficiency, str(lpgk))
+        self.assertIn(target_proficiency, str(lpgk))
+        self.assertEqual(LearningPlanGoalKsa.objects.all().count(), 1)
+        self.assertEqual(self.learning_plan_goal.ksas.count(), 1)
+        self.assertEqual(self.ksa.learning_plans_ksas.count(), 1)
+        self.assertIn(str(lpgk.pk), lpgk.get_absolute_url())

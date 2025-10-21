@@ -1,9 +1,11 @@
+from django.contrib.postgres.fields import ArrayField
 from django.core.validators import RegexValidator
 from django.db import models
 from django.urls import reverse
+from model_utils import Choices
 from model_utils.models import TimeStampedModel
 
-from external.models import Job
+from external.models import Competency, Job, Ksa
 from portal.regex import REGEX_CHECK, REGEX_ERROR_MESSAGE
 from users.models import User
 from vacancies.models import Vacancy
@@ -137,3 +139,131 @@ class TrainingPlan(TimeStampedModel):
 
     def get_absolute_url(self):
         return reverse("api:training-plans-detail", kwargs={"pk": self.pk})
+
+
+class LearningPlan(TimeStampedModel):
+    """Model to store learning plans detail"""
+    TIMEFRAME_CHOICES = Choices('Short-term (1-2 years)',
+                                'Long-term (3-4 years)')
+    learner = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='learning_plans')
+    name = models.TextField(validators=[
+        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+    ])
+    timeframe = models.CharField(max_length=50, choices=TIMEFRAME_CHOICES)
+
+    def __str__(self):
+        return f'{self.name} - {self.learner} ({self.timeframe})'
+
+    def get_absolute_url(self):
+        return reverse("api:learning-plans-detail", kwargs={"pk": self.pk})
+
+
+class LearningPlanCompetency(TimeStampedModel):
+    """Model to store competencies for a learning plan"""
+    PRIORITY_CHOICES = Choices('Highest', 'High', 'Medium', 'Low', 'Lowest')
+    learning_plan = models.ForeignKey(
+        LearningPlan, on_delete=models.CASCADE, related_name='competencies')
+    eccr_competency = models.ForeignKey(
+        Competency, on_delete=models.CASCADE,
+        related_name='learning_plans_competencies')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.learning_plan.save(update_fields=['modified',])
+
+    # Return the name of the competency
+    @property
+    def plan_competency_name(self):
+        return self.eccr_competency.name
+
+    def __str__(self):
+        return (f'{self.plan_competency_name} - '
+                f'{self.learning_plan} ({self.priority})')
+
+    def get_absolute_url(self):
+        return reverse("api:learning-plan-competencies-detail",
+                       kwargs={"pk": self.pk})
+
+
+class LearningPlanGoal(TimeStampedModel):
+    """Model to store goals for a learning plan"""
+    plan_competency = models.ForeignKey(
+        LearningPlanCompetency, on_delete=models.CASCADE, related_name='goals')
+    goal_name = models.TextField(validators=[
+        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+    ])
+    timeline = models.CharField(max_length=20, validators=[
+        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+    ])
+
+    # store a list of selected choices
+    resources_support = ArrayField(
+        models.CharField(
+            max_length=500,
+            validators=[RegexValidator(
+                regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE)],
+        ),
+        default=list,
+        blank=True,
+    )
+
+    obstacles = ArrayField(
+        models.CharField(
+            max_length=500,
+            validators=[RegexValidator(
+                regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE)],
+        ),
+        default=list,
+        blank=True,
+    )
+
+    resources_support_other = models.TextField(blank=True, validators=[
+        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+    ])
+    obstacles_other = models.TextField(blank=True, validators=[
+        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+    ])
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.plan_competency.save(update_fields=['modified',])
+
+    def __str__(self):
+        return f'{self.goal_name} - {self.plan_competency} ({self.timeline})'
+
+    def get_absolute_url(self):
+        return reverse("api:learning-plan-goals-detail",
+                       kwargs={"pk": self.pk})
+
+
+class LearningPlanGoalKsa(TimeStampedModel):
+    """Model to store KSAs for a learning plan goal"""
+    plan_goal = models.ForeignKey(
+        LearningPlanGoal, on_delete=models.CASCADE, related_name='ksas')
+    eccr_ksa = models.ForeignKey(
+        Ksa, on_delete=models.CASCADE, related_name='learning_plans_ksas')
+    current_proficiency = models.CharField(max_length=20, validators=[
+        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+    ])
+    target_proficiency = models.CharField(max_length=20, validators=[
+        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+    ])
+
+    # Return the name of the KSA
+    @property
+    def ksa_name(self):
+        return self.eccr_ksa.name
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.plan_goal.save(update_fields=['modified',])
+
+    def __str__(self):
+        return (f'{self.ksa_name} - {self.plan_goal}'
+                f'({self.current_proficiency} - {self.target_proficiency})')
+
+    def get_absolute_url(self):
+        return reverse("api:learning-plan-goal-ksas-detail",
+                       kwargs={"pk": self.pk})

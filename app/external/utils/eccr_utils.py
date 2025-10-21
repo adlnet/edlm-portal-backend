@@ -72,6 +72,7 @@ def search_eccr_item(id, auth=None):
         requests.Response: [dictionary]
     """
     data = {'data': f'(@id:"{id}")'}
+
     if auth is not None:
         return requests.post(get_eccr_search_api_url(),
                              auth=auth, timeout=3.0, data=data)
@@ -79,7 +80,7 @@ def search_eccr_item(id, auth=None):
         return requests.post(get_eccr_search_api_url(), timeout=3.0, data=data)
 
 
-def get_eccr_item(id, type, auth=None):
+def get_eccr_item(id, item_type, auth=None):
     """
     Get a specific item from the id and type
 
@@ -94,11 +95,11 @@ def get_eccr_item(id, type, auth=None):
     """
     data = {'signatureSheet': []}
     if auth is not None:
-        return requests.post(get_eccr_data_api_url() + f'{type}/{id}',
-                             auth=auth, timeout=3.0, data=data)
+        return requests.get(get_eccr_data_api_url() + f'{item_type}/{id}',
+                            auth=auth, timeout=3.0, data=data)
     else:
-        return requests.post(get_eccr_data_api_url() + f'{type}/{id}',
-                             timeout=3.0, data=data)
+        return requests.get(get_eccr_data_api_url() + f'{item_type}/{id}',
+                            timeout=3.0, data=data)
 
 
 class SignatureAuth(AuthBase):

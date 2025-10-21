@@ -10,11 +10,18 @@ from rest_framework.views import APIView
 from rest_framework_guardian import filters
 
 from api.models import (CandidateList, CandidateRanking, ProfileQuestion,
-                        ProfileResponse, TrainingPlan)
+                        ProfileResponse, TrainingPlan, LearningPlan,
+                        LearningPlanCompetency, LearningPlanGoal,
+                        LearningPlanGoalKsa)
 from api.serializers import (CandidateListSerializer,
                              CandidateRankingSerializer,
                              ProfileQuestionSerializer,
-                             ProfileResponseSerializer, TrainingPlanSerializer)
+                             ProfileResponseSerializer,
+                             TrainingPlanSerializer,
+                             LearningPlanSerializer,
+                             LearningPlanCompetencySerializer,
+                             LearningPlanGoalSerializer,
+                             LearningPlanGoalKsaSerializer)
 from api.utils.xapi_utils import (COURSE_PROGRESS_VERBS,
                                   filter_courses_by_exclusion,
                                   get_lrs_statements,
@@ -250,3 +257,31 @@ class GetCourseProgressView(APIView):
             return Response({'message': 'An error occurred while'
                             ' fetching user course progress'},
                             status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LearningPlanGoalKsaViewSet(viewsets.ModelViewSet):
+    """Viewset for Learning Plan Goal KSAs."""
+    queryset = LearningPlanGoalKsa.objects.all()
+    serializer_class = LearningPlanGoalKsaSerializer
+    filter_backends = [filters.ObjectPermissionsFilter,]
+
+
+class LearningPlanGoalViewSet(viewsets.ModelViewSet):
+    """Viewset for Learning Plan Goals"""
+    queryset = LearningPlanGoal.objects.all()
+    serializer_class = LearningPlanGoalSerializer
+    filter_backends = [filters.ObjectPermissionsFilter,]
+
+
+class LearningPlanCompetencyViewSet(viewsets.ModelViewSet):
+    """Viewset for Learning Plan Competencies"""
+    queryset = LearningPlanCompetency.objects.all()
+    serializer_class = LearningPlanCompetencySerializer
+    filter_backends = [filters.ObjectPermissionsFilter,]
+
+
+class LearningPlanViewSet(viewsets.ModelViewSet):
+    """Viewset for Learning Plans"""
+    queryset = LearningPlan.objects.all()
+    serializer_class = LearningPlanSerializer
+    filter_backends = [filters.ObjectPermissionsFilter,]

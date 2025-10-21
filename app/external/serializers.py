@@ -3,7 +3,7 @@ import logging
 from rest_framework import serializers
 
 from configuration.utils.portal_utils import confusable_homoglyphs_check
-from external.models import Course, Job, LearnerRecord
+from external.models import Course, Competency, Job, Ksa, LearnerRecord
 
 logger = logging.getLogger(__name__)
 HOMOGLYPH_ERROR = "Data contains homoglyphs and can be dangerous. Check" + \
@@ -46,6 +46,32 @@ class LearnerRecordSerializer(serializers.ModelSerializer):
         model = LearnerRecord
         fields = ['name',
                   'user',]
+
+    def validate(self, attrs):
+        if not confusable_homoglyphs_check(attrs):
+            raise serializers.ValidationError(HOMOGLYPH_ERROR)
+        return super().validate(attrs)
+
+
+class CompetencySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Competency
+        fields = ['name',
+                  'reference']
+
+    def validate(self, attrs):
+        if not confusable_homoglyphs_check(attrs):
+            raise serializers.ValidationError(HOMOGLYPH_ERROR)
+        return super().validate(attrs)
+
+
+class KsaSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Ksa
+        fields = ['name',
+                  'reference']
 
     def validate(self, attrs):
         if not confusable_homoglyphs_check(attrs):
