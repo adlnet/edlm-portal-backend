@@ -11,17 +11,14 @@ from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
                         LearningPlanGoalKsa)
 from configuration.utils.portal_utils import confusable_homoglyphs_check
 from external.models import Competency, Job, Ksa
-from external.utils.eccr_utils import get_eccr_item
+from external.utils.eccr_utils import validate_eccr_item
 from users.models import User
 from vacancies.models import Vacancy
 
 logger = logging.getLogger(__name__)
 HOMOGLYPH_ERROR = "Data contains homoglyphs and can be dangerous. Check" + \
     " logs for more details"
-ECCR_VALIDATION_ERROR = "UUID does not exist in ECCR, logs for more details."
-ECCR_VALIDATION_OTHER_ERROR = "ECCR API error, logs for more details."
-ECCR_JSON_ERROR = "ECCR returned response is not JSON." + \
-    " Check logs for more details."
+ECCR_FAILED_ERROR = "Failed to validate ECCR item: "
 
 
 class ProfileAnswerSerializer(serializers.ModelSerializer):
@@ -228,32 +225,6 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
 
-    def _validate_ksa_from_eccr(self, ksa_reference):
-        """Validate against KSA reference from ECCR"""
-        # Input format: itemType/itemUUID
-        ksa_type, ksa_id = ksa_reference.split('/', 1)
-        resp = get_eccr_item(
-            id=ksa_id,
-            item_type=ksa_type
-        )
-
-        if resp.status_code == 200:
-            try:
-                name = resp.json().get('name', {}).get('@value', '')
-                return name
-            except ValueError:
-                raise serializers.ValidationError(
-                    ECCR_JSON_ERROR
-                )
-        elif resp.status_code == 404:
-            raise serializers.ValidationError(
-                ECCR_VALIDATION_ERROR
-            )
-        else:
-            raise serializers.ValidationError(
-                ECCR_VALIDATION_OTHER_ERROR
-            )
-
     def create(self, validated_data):
         """
         Create or link to ECCR External KSA
@@ -261,16 +232,19 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
         """
         if 'ksa_external_reference' in validated_data:
             reference = validated_data.pop('ksa_external_reference')
-            data_exists = Ksa.objects.filter(reference=reference).exists()
+            ksa = Ksa.objects.filter(reference=reference).first()
 
-            if data_exists:
-                ksa = Ksa.objects.get(reference=reference)
-            else:
-                ksa_name = self._validate_ksa_from_eccr(reference)
-                ksa = Ksa.objects.create(
-                    reference=reference,
-                    name=ksa_name
-                )
+            if ksa is None:
+                try:
+                    ksa_name = validate_eccr_item(reference)
+                    ksa = Ksa.objects.create(
+                        reference=reference,
+                        name=ksa_name
+                    )
+                except Exception as e:
+                    raise serializers.ValidationError(
+                        f"{ECCR_FAILED_ERROR} {e}"
+                    )
             validated_data['eccr_ksa'] = ksa
 
         learning_plan_goal_ksa = LearningPlanGoalKsa.objects.create(
@@ -285,16 +259,19 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
         """
         if 'ksa_external_reference' in validated_data:
             reference = validated_data.pop('ksa_external_reference')
-            data_exists = Ksa.objects.filter(reference=reference).exists()
+            ksa = Ksa.objects.filter(reference=reference).first()
 
-            if data_exists:
-                ksa = Ksa.objects.get(reference=reference)
-            else:
-                ksa_name = self._validate_ksa_from_eccr(reference)
-                ksa = Ksa.objects.create(
-                    reference=reference,
-                    name=ksa_name
-                )
+            if ksa is None:
+                try:
+                    ksa_name = validate_eccr_item(reference)
+                    ksa = Ksa.objects.create(
+                        reference=reference,
+                        name=ksa_name
+                    )
+                except Exception as e:
+                    raise serializers.ValidationError(
+                        f"{ECCR_FAILED_ERROR} {e}"
+                    )
             validated_data['eccr_ksa'] = ksa
 
         for attr, value in validated_data.items():
@@ -403,32 +380,6 @@ class LearningPlanCompetencySerializer(serializers.ModelSerializer,
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
 
-    def _validate_competency_from_eccr(self, comp_reference):
-        """Validate against competency reference from ECCR"""
-        # Input format: itemType/itemUUID
-        comp_type, comp_id = comp_reference.split('/', 1)
-        resp = get_eccr_item(
-            id=comp_id,
-            item_type=comp_type
-        )
-
-        if resp.status_code == 200:
-            try:
-                name = resp.json().get('name', {}).get('@value', '')
-                return name
-            except ValueError:
-                raise serializers.ValidationError(
-                    ECCR_JSON_ERROR
-                )
-        elif resp.status_code == 404:
-            raise serializers.ValidationError(
-                ECCR_VALIDATION_ERROR
-            )
-        else:
-            raise serializers.ValidationError(
-                ECCR_VALIDATION_OTHER_ERROR
-            )
-
     def create(self, validated_data):
         """
         Create or link to ECCR External Competency
@@ -436,17 +387,19 @@ class LearningPlanCompetencySerializer(serializers.ModelSerializer,
         """
         if 'competency_external_reference' in validated_data:
             reference = validated_data.pop('competency_external_reference')
-            data_exists = Competency.objects.filter(
-                reference=reference).exists()
+            competency = Competency.objects.filter(reference=reference).first()
 
-            if data_exists:
-                competency = Competency.objects.get(reference=reference)
-            else:
-                comp_name = self._validate_competency_from_eccr(reference)
-                competency = Competency.objects.create(
-                    reference=reference,
-                    name=comp_name
-                )
+            if competency is None:
+                try:
+                    comp_name = validate_eccr_item(reference)
+                    competency = Competency.objects.create(
+                        reference=reference,
+                        name=comp_name
+                    )
+                except Exception as e:
+                    raise serializers.ValidationError(
+                        f"{ECCR_FAILED_ERROR} {e}"
+                    )
 
             validated_data['eccr_competency'] = competency
 
@@ -462,17 +415,19 @@ class LearningPlanCompetencySerializer(serializers.ModelSerializer,
         """
         if 'competency_external_reference' in validated_data:
             reference = validated_data.pop('competency_external_reference')
-            data_exists = Competency.objects.filter(
-                reference=reference).exists()
+            competency = Competency.objects.filter(reference=reference).first()
 
-            if data_exists:
-                competency = Competency.objects.get(reference=reference)
-            else:
-                comp_name = self._validate_competency_from_eccr(reference)
-                competency = Competency.objects.create(
-                    reference=reference,
-                    name=comp_name
-                )
+            if competency is None:
+                try:
+                    comp_name = validate_eccr_item(reference)
+                    competency = Competency.objects.create(
+                        reference=reference,
+                        name=comp_name
+                    )
+                except Exception as e:
+                    raise serializers.ValidationError(
+                        f"{ECCR_FAILED_ERROR} {e}"
+                    )
             validated_data['eccr_competency'] = competency
 
         for attr, value in validated_data.items():
