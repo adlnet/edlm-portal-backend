@@ -102,6 +102,46 @@ def get_eccr_item(id, item_type, auth=None):
                             timeout=3.0, data=data)
 
 
+def validate_eccr_item(reference):
+    """
+    Validate against reference from ECCR
+
+    Args:
+        reference (string): the reference type and
+        id of the ECCR item to validate
+
+    Returns:
+        string: the name of the ECCR item if found, else None
+    """
+    try:
+        item_type, item_id = reference.split('/', 1)
+    except ValueError:
+        raise Exception("Invalid ECCR reference format, expected 'type/id'")
+
+    resp = get_eccr_item(
+        id=item_id,
+        item_type=item_type
+    )
+
+    if resp.status_code == 200:
+        try:
+            name = resp.json().get('name', {}).get('@value', '')
+            return name
+        except ValueError:
+            raise Exception(
+                "ECCR returned response is not JSON. "
+                "Check logs for more details."
+            )
+    elif resp.status_code == 404:
+        raise Exception(
+            "UUID does not exist in ECCR, logs for more details."
+        )
+    else:
+        raise Exception(
+            "ECCR API error, logs for more details."
+        )
+
+
 class SignatureAuth(AuthBase):
     """Attaches HTTP Authorization Header to the given Request object."""
 
