@@ -268,6 +268,7 @@ class LearningPlanGoalKsa(TimeStampedModel):
         return reverse("api:learning-plan-goal-ksas-detail",
                        kwargs={"pk": self.pk})
 
+
 class LearningPlanGoalCourse(TimeStampedModel):
     """Model to store courses for a learning plan goal"""
     plan_goal = models.ForeignKey(
@@ -286,7 +287,7 @@ class LearningPlanGoalCourse(TimeStampedModel):
 
     def __str__(self):
         return f'{self.course_name} - {self.plan_goal}'
-    
+
     def get_absolute_url(self):
         return reverse("api:learning-plan-goal-courses-detail",
                        kwargs={"pk": self.pk})

@@ -22,9 +22,9 @@ class UtilsTests(TestSetUp):
     def test_xds_get_course_name(self):
         """Test that util extracts course name"""
         expected = "abc"
-        course = {"Course": {"CourseTitle": expected}}
+        course = {"p2881-core": {"Title": expected}}
         resp = Mock()
-        resp.json.return_value = json.dumps(course)
+        resp.json.return_value = course
 
         ret = get_course_name(resp)
 

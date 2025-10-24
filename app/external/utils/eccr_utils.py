@@ -53,10 +53,10 @@ def search_eccr(query, type=None, start=0, length=20, auth=None):
     else:
         data['data'] = f'({query}) AND NOT (subType:"Progression")'
     if auth is not None:
-        return requests.post(get_eccr_search_api_url(),
-                             auth=auth, timeout=3.0, data=data)
+        return requests.get(get_eccr_search_api_url(),
+                            auth=auth, timeout=3.0, data=data)
     else:
-        return requests.post(get_eccr_search_api_url(), timeout=3.0, data=data)
+        return requests.get(get_eccr_search_api_url(), timeout=3.0, data=data)
 
 
 def search_eccr_item(id, auth=None):
@@ -129,16 +129,15 @@ def validate_eccr_item(reference):
             return name
         except ValueError:
             raise Exception(
-                "ECCR returned response is not JSON. "
-                "Check logs for more details."
+                "ECCR returned response is not JSON."
             )
     elif resp.status_code == 404:
         raise Exception(
-            "UUID does not exist in ECCR, logs for more details."
+            "UUID does not exist in ECCR"
         )
     else:
         raise Exception(
-            "ECCR API error, logs for more details."
+            "ECCR API error, check for more details."
         )
 
 

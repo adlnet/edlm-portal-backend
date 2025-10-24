@@ -8,10 +8,11 @@ from rest_framework_guardian.serializers import \
 from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
                         ProfileQuestion, ProfileResponse, TrainingPlan,
                         LearningPlan, LearningPlanCompetency, LearningPlanGoal,
-                        LearningPlanGoalKsa)
+                        LearningPlanGoalCourse, LearningPlanGoalKsa)
 from configuration.utils.portal_utils import confusable_homoglyphs_check
-from external.models import Competency, Job, Ksa
+from external.models import Competency, Course, Job, Ksa
 from external.utils.eccr_utils import validate_eccr_item
+from external.utils.xds_utils import validate_xds_course
 from users.models import User
 from vacancies.models import Vacancy
 
@@ -19,6 +20,9 @@ logger = logging.getLogger(__name__)
 HOMOGLYPH_ERROR = "Data contains homoglyphs and can be dangerous. Check" + \
     " logs for more details"
 ECCR_FAILED_ERROR = "Failed to validate ECCR item: "
+ECCR_EXCEPTION_MSG = "ECCR validation failed, please check logs for details"
+XDS_FAILED_ERROR = "Failed to validate XDS item: "
+XDS_EXCEPTION_MSG = "XDS validation failed, please check logs for details"
 
 
 class ProfileAnswerSerializer(serializers.ModelSerializer):
@@ -203,6 +207,112 @@ class TrainingPlanSerializer(serializers.ModelSerializer,
         return super().validate(attrs)
 
 
+class LearningPlanGoalCourseSerializer(serializers.ModelSerializer,
+                                       ObjectPermissionsAssignmentMixin):
+    plan_goal = serializers.PrimaryKeyRelatedField(
+        queryset=LearningPlanGoal.objects.all())
+    course_external_reference = serializers.CharField(
+        write_only=True, required=True
+    )
+    # Read-only field showing the actual linked XDS Course reference
+    xds_course = serializers.PrimaryKeyRelatedField(
+        read_only=True
+    )
+    course_name = serializers.ReadOnlyField()
+
+    class Meta:
+        model = LearningPlanGoalCourse
+        fields = ['id', 'plan_goal', 'course_name',
+                  'course_external_reference',
+                  'xds_course', 'modified', 'created',]
+        extra_kwargs = {'modified': {'read_only': True},
+                        'created': {'read_only': True}}
+
+    def create(self, validated_data):
+        """
+        Create or link to XDS External Course
+        based on external reference
+        """
+        if 'course_external_reference' in validated_data:
+            reference = validated_data.pop('course_external_reference')
+            course = Course.objects.filter(reference=reference).first()
+
+            if course is None:
+                try:
+                    course_name = validate_xds_course(reference)
+                    course = Course.objects.create(
+                        reference=reference,
+                        name=course_name
+                    )
+                except Exception as e:
+                    logger.error(f"{XDS_FAILED_ERROR} {e}")
+                    raise serializers.ValidationError(
+                        XDS_EXCEPTION_MSG
+                    )
+            validated_data['xds_course'] = course
+
+        learning_plan_goal_course = LearningPlanGoalCourse.objects.create(
+            **validated_data
+        )
+
+        return learning_plan_goal_course
+
+    def update(self, instance, validated_data):
+        """
+        Update based on external reference
+        """
+        if 'course_external_reference' in validated_data:
+            reference = validated_data.pop('course_external_reference')
+            course = Course.objects.filter(reference=reference).first()
+
+            if course is None:
+                try:
+                    course_name = validate_xds_course(reference)
+                    course = Course.objects.create(
+                        reference=reference,
+                        name=course_name
+                    )
+                except Exception as e:
+                    logger.error(f"{XDS_FAILED_ERROR} {e}")
+                    raise serializers.ValidationError(
+                        XDS_EXCEPTION_MSG
+                    )
+            validated_data['xds_course'] = course
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
+
+    def get_permissions_map(self, created):
+        perms = {}
+        if not created:
+            submitted_by = (self.instance.plan_goal.plan_competency
+                            .learning_plan.learner)
+            perms = {
+                'view_learningplangoalcourse': [submitted_by,],
+                'change_learningplangoalcourse': [submitted_by,],
+                'delete_learningplangoalcourse': [submitted_by,]
+            }
+        return perms
+
+    def validate(self, attrs):
+        if not confusable_homoglyphs_check(attrs):
+            raise serializers.ValidationError(HOMOGLYPH_ERROR)
+        return super().validate(attrs)
+
+
+class LearningPlanGoalCourseReadSerializer(serializers.ModelSerializer):
+    """
+    Nested serializer for displaying Read-Only
+    Courses with Learning Plan Goals
+    """
+    class Meta:
+        model = LearningPlanGoalCourse
+        fields = ['id', 'course_name', 'xds_course']
+
+
 class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
                                     ObjectPermissionsAssignmentMixin):
     plan_goal = serializers.PrimaryKeyRelatedField(
@@ -211,7 +321,7 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
     ksa_external_reference = serializers.CharField(
         write_only=True, required=True
     )
-    # Read-only field showing the actual linked ECCR KSA Id and name
+    # Read-only field showing the actual linked ECCR KSA Id
     eccr_ksa = serializers.PrimaryKeyRelatedField(
         read_only=True
     )
@@ -242,8 +352,9 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
                         name=ksa_name
                     )
                 except Exception as e:
+                    logger.error(f"{ECCR_FAILED_ERROR} {e}")
                     raise serializers.ValidationError(
-                        f"{ECCR_FAILED_ERROR} {e}"
+                        ECCR_EXCEPTION_MSG
                     )
             validated_data['eccr_ksa'] = ksa
 
@@ -269,8 +380,9 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
                         name=ksa_name
                     )
                 except Exception as e:
+                    logger.error(f"{ECCR_FAILED_ERROR} {e}")
                     raise serializers.ValidationError(
-                        f"{ECCR_FAILED_ERROR} {e}"
+                        ECCR_EXCEPTION_MSG
                     )
             validated_data['eccr_ksa'] = ksa
 
@@ -315,12 +427,15 @@ class LearningPlanGoalSerializer(serializers.ModelSerializer,
         queryset=LearningPlanCompetency.objects.all())
     # Nested read-only KSAs
     ksas = LearningPlanGoalKsaReadSerializer(many=True, read_only=True)
+    # Nested read-only Courses
+    courses = LearningPlanGoalCourseReadSerializer(
+        many=True, read_only=True)
 
     class Meta:
         model = LearningPlanGoal
         fields = ['id', 'plan_competency', 'goal_name', 'timeline',
                   'resources_support', 'obstacles', 'resources_support_other',
-                  'obstacles_other', 'ksas', 'modified', 'created']
+                  'obstacles_other', 'ksas', 'courses', 'modified', 'created']
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
 
@@ -348,13 +463,15 @@ class LearningPlanGoalReadSerializer(serializers.ModelSerializer):
     """
     ksas = LearningPlanGoalKsaReadSerializer(
         many=True, read_only=True)
+    courses = LearningPlanGoalCourseReadSerializer(
+        many=True, read_only=True)
 
     class Meta:
         model = LearningPlanGoal
         fields = ['id', 'goal_name', 'timeline',
                   'resources_support', 'obstacles',
                   'resources_support_other',
-                  'obstacles_other', 'ksas']
+                  'obstacles_other', 'ksas', 'courses']
 
 
 class LearningPlanCompetencySerializer(serializers.ModelSerializer,
@@ -397,10 +514,10 @@ class LearningPlanCompetencySerializer(serializers.ModelSerializer,
                         name=comp_name
                     )
                 except Exception as e:
+                    logger.error(f"{ECCR_FAILED_ERROR} {e}")
                     raise serializers.ValidationError(
-                        f"{ECCR_FAILED_ERROR} {e}"
+                        ECCR_EXCEPTION_MSG
                     )
-
             validated_data['eccr_competency'] = competency
 
         learning_plan_competency = LearningPlanCompetency.objects.create(
@@ -425,8 +542,9 @@ class LearningPlanCompetencySerializer(serializers.ModelSerializer,
                         name=comp_name
                     )
                 except Exception as e:
+                    logger.error(f"{ECCR_FAILED_ERROR} {e}")
                     raise serializers.ValidationError(
-                        f"{ECCR_FAILED_ERROR} {e}"
+                        ECCR_EXCEPTION_MSG
                     )
             validated_data['eccr_competency'] = competency
 

@@ -12,7 +12,7 @@ from rest_framework_guardian import filters
 from api.models import (CandidateList, CandidateRanking, ProfileQuestion,
                         ProfileResponse, TrainingPlan, LearningPlan,
                         LearningPlanCompetency, LearningPlanGoal,
-                        LearningPlanGoalKsa)
+                        LearningPlanGoalCourse, LearningPlanGoalKsa)
 from api.serializers import (CandidateListSerializer,
                              CandidateRankingSerializer,
                              ProfileQuestionSerializer,
@@ -21,6 +21,7 @@ from api.serializers import (CandidateListSerializer,
                              LearningPlanSerializer,
                              LearningPlanCompetencySerializer,
                              LearningPlanGoalSerializer,
+                             LearningPlanGoalCourseSerializer,
                              LearningPlanGoalKsaSerializer)
 from api.utils.xapi_utils import (COURSE_PROGRESS_VERBS,
                                   filter_courses_by_exclusion,
@@ -257,6 +258,13 @@ class GetCourseProgressView(APIView):
             return Response({'message': 'An error occurred while'
                             ' fetching user course progress'},
                             status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LearningPlanGoalCourseViewSet(viewsets.ModelViewSet):
+    """Viewset for Learning Plan Goal Courses."""
+    queryset = LearningPlanGoalCourse.objects.all()
+    serializer_class = LearningPlanGoalCourseSerializer
+    filter_backends = [filters.ObjectPermissionsFilter,]
 
 
 class LearningPlanGoalKsaViewSet(viewsets.ModelViewSet):
