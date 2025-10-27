@@ -5,13 +5,15 @@ from django.test import tag
 
 from configuration.models import Configuration
 from external.models import Course
-from external.utils.eccr_utils import (get_eccr_data_api_url,
-                                       get_eccr_search_api_url)
+from external.utils.eccr_utils import (get_eccr_data_api_url, get_eccr_item,
+                                       get_eccr_search_api_url,
+                                       validate_eccr_item)
 from external.utils.xds_utils import (TokenAuth, format_metadata,
                                       get_course_name, get_courses_api_url,
                                       get_xds_experience,
                                       handle_unauthenticated_user,
-                                      metadata_to_target, save_courses)
+                                      metadata_to_target, save_courses,
+                                      validate_xds_course)
 
 from .test_setup import TestSetUp
 
@@ -182,3 +184,83 @@ class UtilsTests(TestSetUp):
             req.get.assert_called_once()
             self.assertIn(exp_id, req.get.call_args[0][0])
             self.assertEqual(auth, req.get.call_args[1]['auth'])
+
+    def test_get_eccr_item(self):
+        """Test that eccr request is correctly formatted"""
+        item_type = "test_type"
+        item_id = "12345"
+        expected = None
+        eccr_api = "https://example.com"
+        conf = Configuration(target_eccr_api=eccr_api)
+        conf.save()
+        with patch('external.utils.eccr_utils.requests') as req:
+            req.get.return_value = None
+            actual = get_eccr_item(item_id, item_type)
+
+            self.assertEqual(actual, expected)
+            req.get.assert_called_once()
+            expected_url = f"{eccr_api}/api/data/{item_type}/{item_id}"
+            self.assertEqual(expected_url, req.get.call_args[0][0])
+
+    def test_get_eccr_item_with_auth(self):
+        """Test that eccr request is correctly formatted"""
+        token = "abc"
+        auth = TokenAuth(token)
+        item_type = "test_type"
+        item_id = "12345"
+        expected = None
+        eccr_api = "https://example.com"
+        conf = Configuration(target_eccr_api=eccr_api)
+        conf.save()
+        with patch('external.utils.eccr_utils.requests') as req:
+            req.get.return_value = None
+            actual = get_eccr_item(item_id, item_type, auth=auth)
+
+            self.assertEqual(actual, expected)
+            req.get.assert_called_once()
+            expected_url = f"{eccr_api}/api/data/{item_type}/{item_id}"
+            self.assertEqual(expected_url, req.get.call_args[0][0])
+
+    def test_validate_eccr_item(self):
+        """Test that util validates eccr item"""
+        reference = "test_framework/12345"
+        expected_name = "Test Framework 7"
+        eccr_api = "https://example.com"
+        conf = Configuration(target_eccr_api=eccr_api)
+        conf.save()
+
+        with patch('external.utils.eccr_utils.get_eccr_item') as req:
+            resp = Mock()
+            resp.status_code = 200
+            resp.json.return_value = {
+                'name': {'@value': expected_name}
+            }
+
+            req.return_value = resp
+
+            actual = validate_eccr_item(reference)
+
+            self.assertEqual(actual, expected_name)
+            req.assert_called_once_with(id="12345", item_type="test_framework")
+
+    def test_validate_xds_course(self):
+        """Test that util validates xds course"""
+        reference = "bbc123"
+        expected_name = "Test Course ABC"
+        xds_api = "https://example.com"
+        conf = Configuration(target_xds_api=xds_api)
+        conf.save()
+
+        with patch('external.utils.xds_utils.get_xds_experience') as req:
+            resp = Mock()
+            resp.status_code = 200
+            resp.json.return_value = {
+                "p2881-core": {"Title": expected_name}
+            }
+
+            req.return_value = resp
+
+            actual = validate_xds_course(reference)
+
+            self.assertEqual(actual, expected_name)
+            req.assert_called_once_with(experience_id=reference)
