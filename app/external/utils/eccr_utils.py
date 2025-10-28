@@ -54,7 +54,7 @@ def search_eccr(query, type=None, start=0, length=20, auth=None):
         data['data'] = f'({query}) AND NOT (subType:"Progression")'
     if auth is not None:
         return requests.post(get_eccr_search_api_url(),
-                            auth=auth, timeout=3.0, data=data)
+                             auth=auth, timeout=3.0, data=data)
     else:
         return requests.post(get_eccr_search_api_url(), timeout=3.0, data=data)
 
