@@ -150,7 +150,7 @@ def validate_xds_course(reference):
             name = get_course_name(resp)
             return name
         except ValueError:
-            raise Exception(
+            raise ValueError(
                 "XDS returned response is not JSON. "
             )
     elif resp.status_code == 404:

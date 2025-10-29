@@ -116,7 +116,7 @@ def validate_eccr_item(reference):
     try:
         item_type, item_id = reference.split('/', 1)
     except ValueError:
-        raise Exception("Invalid ECCR reference format, expected 'type/id'")
+        raise ValueError("Invalid ECCR reference format, expected 'type/id'")
 
     resp = get_eccr_item(
         id=item_id,
@@ -128,7 +128,7 @@ def validate_eccr_item(reference):
             name = resp.json().get('name', {}).get('@value', '')
             return name
         except ValueError:
-            raise Exception(
+            raise ValueError(
                 "ECCR returned response is not JSON."
             )
     elif resp.status_code == 404:
