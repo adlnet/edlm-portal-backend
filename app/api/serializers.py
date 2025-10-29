@@ -23,6 +23,7 @@ ECCR_FAILED_ERROR = "Failed to validate ECCR item: "
 ECCR_EXCEPTION_MSG = "ECCR validation failed, please check logs for details"
 XDS_FAILED_ERROR = "Failed to validate XDS item: "
 XDS_EXCEPTION_MSG = "XDS validation failed, please check logs for details"
+PARENT_ID_UPDATE_ERROR = "Cannot change the parent id"
 
 
 class ProfileAnswerSerializer(serializers.ModelSerializer):
@@ -261,6 +262,13 @@ class LearningPlanGoalCourseSerializer(serializers.ModelSerializer,
         """
         Update based on external reference
         """
+        if 'plan_goal' in validated_data:
+            new_goal = validated_data['plan_goal']
+            if instance.plan_goal != new_goal:
+                raise serializers.ValidationError(
+                    PARENT_ID_UPDATE_ERROR
+                )
+
         if 'course_external_reference' in validated_data:
             reference = validated_data.pop('course_external_reference')
             course = Course.objects.filter(reference=reference).first()
@@ -368,6 +376,13 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
         """
         Update based on external reference
         """
+        if 'plan_goal' in validated_data:
+            new_goal = validated_data['plan_goal']
+            if instance.plan_goal != new_goal:
+                raise serializers.ValidationError(
+                    PARENT_ID_UPDATE_ERROR
+                )
+
         if 'ksa_external_reference' in validated_data:
             reference = validated_data.pop('ksa_external_reference')
             ksa = Ksa.objects.filter(reference=reference).first()
@@ -438,6 +453,23 @@ class LearningPlanGoalSerializer(serializers.ModelSerializer,
                   'obstacles_other', 'ksas', 'courses', 'modified', 'created']
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
+
+    def update(self, instance, validated_data):
+        """
+        Update and check if a user is trying to change the parent id
+        """
+        if 'plan_competency' in validated_data:
+            new_competency = validated_data['plan_competency']
+            if instance.plan_competency != new_competency:
+                raise serializers.ValidationError(
+                    PARENT_ID_UPDATE_ERROR
+                )
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
 
     def get_permissions_map(self, created):
         perms = {}
@@ -530,6 +562,13 @@ class LearningPlanCompetencySerializer(serializers.ModelSerializer,
         """
         Update based on external reference
         """
+        if 'learning_plan' in validated_data:
+            new_plan = validated_data['learning_plan']
+            if instance.learning_plan != new_plan:
+                raise serializers.ValidationError(
+                    PARENT_ID_UPDATE_ERROR
+                )
+
         if 'competency_external_reference' in validated_data:
             reference = validated_data.pop('competency_external_reference')
             competency = Competency.objects.filter(reference=reference).first()
@@ -587,8 +626,9 @@ class LearningPlanCompetencyReadSerializer(serializers.ModelSerializer):
 class LearningPlanSerializer(serializers.ModelSerializer,
                              ObjectPermissionsAssignmentMixin):
     learner = serializers.SlugRelatedField(
-        slug_field='email', queryset=User.objects.all(),
-        default=serializers.CurrentUserDefault())
+        slug_field='email',
+        default=serializers.CurrentUserDefault(),
+        read_only=True)
     competencies = LearningPlanCompetencyReadSerializer(
         many=True, read_only=True)
 
@@ -609,6 +649,10 @@ class LearningPlanSerializer(serializers.ModelSerializer,
                 'delete_learningplan': [submitted_by,]
             }
         return perms
+
+    def create(self, validated_data):
+        validated_data['learner'] = self.context['request'].user
+        return super().create(validated_data)
 
     def validate(self, attrs):
         if not confusable_homoglyphs_check(attrs):

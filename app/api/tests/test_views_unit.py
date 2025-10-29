@@ -381,8 +381,7 @@ class ViewTests(TestSetUp):
                           password=self.auth_password)
         response = self.client.post(
             url, {'name': self.learning_plan.name,
-                  'timeframe': self.learning_plan.timeframe,
-                  'learner': self.basic_email})
+                  'timeframe': self.learning_plan.timeframe})
 
         responseDict = json.loads(response.content)
 
@@ -391,7 +390,7 @@ class ViewTests(TestSetUp):
         self.assertEqual(self.learning_plan.timeframe,
                          responseDict['timeframe'])
         self.assertIsNotNone(responseDict['id'])
-        self.assertEqual(self.basic_user.email,
+        self.assertEqual(self.auth_user.email,
                          responseDict['learner'])
 
     def test_learning_plan_competency_requests_no_auth(self):
