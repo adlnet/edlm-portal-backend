@@ -22,9 +22,10 @@ def get_course_name(response):
     Returns:
         String: [course name]
     """
-    metadata_dict = json.loads(response.json())
-    if 'Course' in metadata_dict and 'CourseTitle' in metadata_dict['Course']:
-        return metadata_dict['Course']['CourseTitle']
+    metadata_dict = response.json()
+    if ('p2881-core' in metadata_dict and
+            'Title' in metadata_dict['p2881-core']):
+        return metadata_dict['p2881-core']['Title']
     return None
 
 
@@ -125,7 +126,41 @@ def get_xds_experience(experience_id, auth=None):
         return requests.get(get_courses_api_url(experience_id),
                             auth=auth, timeout=3.0)
     else:
-        return requests.get(get_courses_api_url(experience_id), timeout=3.0)
+        return requests.get(get_courses_api_url(experience_id),
+                            timeout=3.0)
+
+
+def validate_xds_course(reference):
+    """
+    Validate against reference from XDS
+
+    Args:
+        reference (string): the reference of the XDS experience to validate
+
+    Returns:
+        string: the name of the XDS experience if found, else None
+    """
+
+    resp = get_xds_experience(
+        experience_id=reference,
+    )
+
+    if resp.status_code == 200:
+        try:
+            name = get_course_name(resp)
+            return name
+        except ValueError:
+            raise ValueError(
+                "XDS returned response is not JSON. "
+            )
+    elif resp.status_code == 404:
+        raise ValueError(
+            "Reference does not exist in XDS"
+        )
+    else:
+        raise ConnectionError(
+            "XDS API error, check for more details."
+        )
 
 
 class TokenAuth(AuthBase):

@@ -7,7 +7,7 @@ from api.models import (CandidateList, CandidateRanking, LearningPlan,
                         ProfileQuestion, ProfileResponse,
                         TrainingPlan)
 from configuration.models import Configuration
-from external.models import Competency, Job, Ksa
+from external.models import Competency, Course, Job, Ksa
 from users.models import User
 
 
@@ -158,6 +158,14 @@ class TestSetUp(APITestCase):
             eccr_ksa=self.ksa,
             current_proficiency=current_proficiency,
             target_proficiency=target_proficiency
+        )
+
+        # Learning Plan Goal Course
+        course_name = "Test Course"
+        reference = "abcdefg12345"
+        self.course = Course(
+            name=course_name,
+            reference=reference
         )
 
         # Configuration

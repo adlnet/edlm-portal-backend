@@ -381,8 +381,7 @@ class ViewTests(TestSetUp):
                           password=self.auth_password)
         response = self.client.post(
             url, {'name': self.learning_plan.name,
-                  'timeframe': self.learning_plan.timeframe,
-                  'learner': self.basic_email})
+                  'timeframe': self.learning_plan.timeframe})
 
         responseDict = json.loads(response.content)
 
@@ -391,7 +390,7 @@ class ViewTests(TestSetUp):
         self.assertEqual(self.learning_plan.timeframe,
                          responseDict['timeframe'])
         self.assertIsNotNone(responseDict['id'])
-        self.assertEqual(self.basic_user.email,
+        self.assertEqual(self.auth_user.email,
                          responseDict['learner'])
 
     def test_learning_plan_competency_requests_no_auth(self):
@@ -438,16 +437,11 @@ class ViewTests(TestSetUp):
         self.assertEqual(self.learning_plan_competency.priority,
                          responseDict['priority'])
 
-    @patch('api.serializers.get_eccr_item')
+    @patch('api.serializers.validate_eccr_item')
     def test_learning_plan_competency_requests_post(self, mock_eccr):
         """Test that making a post request to the learning plan competency
         api with valid data creates a learning plan competency"""
-        mock_eccr.return_value.status_code = 200
-        mock_eccr.return_value.json.return_value = {
-            "name": {
-                "@value": "test competency"
-            }
-        }
+        mock_eccr.return_value = "test competency"
 
         self.learning_plan.save()
         priority = "Low"
@@ -588,16 +582,11 @@ class ViewTests(TestSetUp):
         self.assertEqual(self.learning_plan_goal_ksa.current_proficiency,
                          responseDict['current_proficiency'])
 
-    @patch('api.serializers.get_eccr_item')
+    @patch('api.serializers.validate_eccr_item')
     def test_learning_plan_goal_ksa_requests_post(self, mock_eccr):
         """Test that making a post request to the learning plan
         goal ksa api with valid data creates a learning plan goal ksa"""
-        mock_eccr.return_value.status_code = 200
-        mock_eccr.return_value.json.return_value = {
-            "name": {
-                "@value": "test ksa"
-            }
-        }
+        mock_eccr.return_value = "test ksa"
 
         self.learning_plan.save()
         self.competency.save()

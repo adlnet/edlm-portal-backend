@@ -3,7 +3,8 @@ from django.test import tag
 
 from api.models import (CandidateList, CandidateRanking, LearningPlan,
                         LearningPlanCompetency, LearningPlanGoal,
-                        LearningPlanGoalKsa, ProfileAnswer, ProfileQuestion,
+                        LearningPlanGoalCourse, LearningPlanGoalKsa,
+                        ProfileAnswer, ProfileQuestion,
                         ProfileResponse)
 
 from .test_setup import TestSetUp
@@ -493,3 +494,26 @@ class ModelTests(TestSetUp):
         self.assertEqual(self.learning_plan_goal.ksas.count(), 1)
         self.assertEqual(self.ksa.learning_plans_ksas.count(), 1)
         self.assertIn(str(lpgk.pk), lpgk.get_absolute_url())
+
+    def test_learning_plan_goal_course(self):
+        """Test that creating a Learning Plan Goal Course is successful"""
+
+        self.learning_plan.save()
+        self.competency.save()
+        self.learning_plan_competency.save()
+        self.learning_plan_goal.save()
+        self.course.save()
+
+        lpgc = LearningPlanGoalCourse(plan_goal=self.learning_plan_goal,
+                                      xds_course=self.course)
+        lpgc.full_clean()
+        lpgc.save()
+
+        self.assertEqual(lpgc.plan_goal, self.learning_plan_goal)
+        self.assertEqual(lpgc.xds_course, self.course)
+        self.assertIn(str(self.learning_plan_goal), str(lpgc))
+        self.assertIn(str(self.course), str(lpgc))
+        self.assertEqual(LearningPlanGoalCourse.objects.all().count(), 1)
+        self.assertEqual(self.learning_plan_goal.courses.count(), 1)
+        self.assertEqual(self.course.xds_courses.count(), 1)
+        self.assertIn(str(lpgc.pk), lpgc.get_absolute_url())

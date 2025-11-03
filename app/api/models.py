@@ -5,7 +5,7 @@ from django.urls import reverse
 from model_utils import Choices
 from model_utils.models import TimeStampedModel
 
-from external.models import Competency, Job, Ksa
+from external.models import Competency, Course, Job, Ksa
 from portal.regex import REGEX_CHECK, REGEX_ERROR_MESSAGE
 from users.models import User
 from vacancies.models import Vacancy
@@ -266,4 +266,28 @@ class LearningPlanGoalKsa(TimeStampedModel):
 
     def get_absolute_url(self):
         return reverse("api:learning-plan-goal-ksas-detail",
+                       kwargs={"pk": self.pk})
+
+
+class LearningPlanGoalCourse(TimeStampedModel):
+    """Model to store courses for a learning plan goal"""
+    plan_goal = models.ForeignKey(
+        LearningPlanGoal, on_delete=models.CASCADE, related_name='courses')
+    xds_course = models.ForeignKey(
+        Course, on_delete=models.CASCADE, related_name='xds_courses')
+
+    # Return the name of the course
+    @property
+    def course_name(self):
+        return self.xds_course.name
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.plan_goal.save(update_fields=['modified',])
+
+    def __str__(self):
+        return f'{self.course_name} - {self.plan_goal}'
+
+    def get_absolute_url(self):
+        return reverse("api:learning-plan-goal-courses-detail",
                        kwargs={"pk": self.pk})

@@ -12,7 +12,7 @@ from rest_framework_guardian import filters
 from api.models import (CandidateList, CandidateRanking, ProfileQuestion,
                         ProfileResponse, TrainingPlan, LearningPlan,
                         LearningPlanCompetency, LearningPlanGoal,
-                        LearningPlanGoalKsa)
+                        LearningPlanGoalCourse, LearningPlanGoalKsa)
 from api.serializers import (CandidateListSerializer,
                              CandidateRankingSerializer,
                              ProfileQuestionSerializer,
@@ -21,6 +21,7 @@ from api.serializers import (CandidateListSerializer,
                              LearningPlanSerializer,
                              LearningPlanCompetencySerializer,
                              LearningPlanGoalSerializer,
+                             LearningPlanGoalCourseSerializer,
                              LearningPlanGoalKsaSerializer)
 from api.utils.xapi_utils import (COURSE_PROGRESS_VERBS,
                                   filter_courses_by_exclusion,
@@ -259,11 +260,36 @@ class GetCourseProgressView(APIView):
                             status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class LearningPlanGoalCourseViewSet(viewsets.ModelViewSet):
+    """Viewset for Learning Plan Goal Courses."""
+    queryset = LearningPlanGoalCourse.objects.all()
+    serializer_class = LearningPlanGoalCourseSerializer
+    filter_backends = [filters.ObjectPermissionsFilter,]
+
+    def create(self, request, *args, **kwargs):
+        lpg_pk = request.data.get('plan_goal')
+        lpg = LearningPlanGoal.objects.get(pk=lpg_pk)
+        if not request.user.has_perm('api.change_learningplangoal', lpg):
+            return Response({'detail': 'You do not have permission'
+                            ' to perform this action'},
+                            status=status.HTTP_403_FORBIDDEN)
+        return super().create(request, *args, **kwargs)
+
+
 class LearningPlanGoalKsaViewSet(viewsets.ModelViewSet):
     """Viewset for Learning Plan Goal KSAs."""
     queryset = LearningPlanGoalKsa.objects.all()
     serializer_class = LearningPlanGoalKsaSerializer
     filter_backends = [filters.ObjectPermissionsFilter,]
+
+    def create(self, request, *args, **kwargs):
+        lpg_pk = request.data.get('plan_goal')
+        lpg = LearningPlanGoal.objects.get(pk=lpg_pk)
+        if not request.user.has_perm('api.change_learningplangoal', lpg):
+            return Response({'detail': 'You do not have permission'
+                            ' to perform this action'},
+                            status=status.HTTP_403_FORBIDDEN)
+        return super().create(request, *args, **kwargs)
 
 
 class LearningPlanGoalViewSet(viewsets.ModelViewSet):
@@ -272,12 +298,30 @@ class LearningPlanGoalViewSet(viewsets.ModelViewSet):
     serializer_class = LearningPlanGoalSerializer
     filter_backends = [filters.ObjectPermissionsFilter,]
 
+    def create(self, request, *args, **kwargs):
+        lpc_pk = request.data.get('plan_competency')
+        lpc = LearningPlanCompetency.objects.get(pk=lpc_pk)
+        if not request.user.has_perm('api.change_learningplancompetency', lpc):
+            return Response({'detail': 'You do not have permission'
+                            ' to perform this action'},
+                            status=status.HTTP_403_FORBIDDEN)
+        return super().create(request, *args, **kwargs)
+
 
 class LearningPlanCompetencyViewSet(viewsets.ModelViewSet):
     """Viewset for Learning Plan Competencies"""
     queryset = LearningPlanCompetency.objects.all()
     serializer_class = LearningPlanCompetencySerializer
     filter_backends = [filters.ObjectPermissionsFilter,]
+
+    def create(self, request, *args, **kwargs):
+        lp_pk = request.data.get('learning_plan')
+        lp = LearningPlan.objects.get(pk=lp_pk)
+        if not request.user.has_perm('api.change_learningplan', lp):
+            return Response({'detail': 'You do not have permission'
+                            ' to perform this action'},
+                            status=status.HTTP_403_FORBIDDEN)
+        return super().create(request, *args, **kwargs)
 
 
 class LearningPlanViewSet(viewsets.ModelViewSet):

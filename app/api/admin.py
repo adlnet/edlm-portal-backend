@@ -5,7 +5,7 @@ from guardian.admin import GuardedModelAdmin
 from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
                         ProfileQuestion, ProfileResponse, TrainingPlan,
                         LearningPlan, LearningPlanCompetency, LearningPlanGoal,
-                        LearningPlanGoalKsa)
+                        LearningPlanGoalCourse, LearningPlanGoalKsa)
 
 
 # Register your models here.
@@ -282,3 +282,10 @@ class LearningPlanGoalKsaAdmin(GuardedModelAdmin):
                     'target_proficiency', 'modified')
     list_filter = ('plan_goal__plan_competency__learning_plan__learner',
                    'current_proficiency', 'target_proficiency', 'modified')
+
+
+@admin.register(LearningPlanGoalCourse)
+class LearningPlanGoalCourseAdmin(GuardedModelAdmin):
+    list_display = ('course_name', 'plan_goal', 'modified')
+    list_filter = ('plan_goal__plan_competency__learning_plan__learner',
+                   'modified')
