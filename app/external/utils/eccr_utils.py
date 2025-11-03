@@ -132,11 +132,11 @@ def validate_eccr_item(reference):
                 "ECCR returned response is not JSON."
             )
     elif resp.status_code == 404:
-        raise Exception(
+        raise ValueError(
             "UUID does not exist in ECCR"
         )
     else:
-        raise Exception(
+        raise ConnectionError(
             "ECCR API error, check for more details."
         )
 

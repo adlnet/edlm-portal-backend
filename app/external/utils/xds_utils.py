@@ -154,11 +154,11 @@ def validate_xds_course(reference):
                 "XDS returned response is not JSON. "
             )
     elif resp.status_code == 404:
-        raise Exception(
+        raise ValueError(
             "Reference does not exist in XDS"
         )
     else:
-        raise Exception(
+        raise ConnectionError(
             "XDS API error, check for more details."
         )
 
