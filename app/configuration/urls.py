@@ -3,12 +3,15 @@ from rest_framework.routers import DefaultRouter
 
 from configuration import views
 
+
 app_name = 'config'
 
 # Create a router and register our ViewSets with it.
 router = DefaultRouter()
 router.register(r'config', views.ConfigurationViewSet,
                 basename='config')
+router.register(r'uiconfig', views.UIConfigurationViewSet,
+                basename='uiconfig')
 
 # The API URLs are now determined automatically by the router.
 urlpatterns = [
