@@ -226,6 +226,9 @@ class LearningPlanGoal(TimeStampedModel):
         RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
     ])
 
+    elrr_goal_id = models.UUIDField(
+        null=True, blank=True)
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         self.plan_competency.save(update_fields=['modified',])
@@ -250,6 +253,8 @@ class LearningPlanGoalKsa(TimeStampedModel):
     target_proficiency = models.CharField(max_length=20, validators=[
         RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
     ])
+    elrr_ksa_id = models.UUIDField(
+        null=True, blank=True)
 
     # Return the name of the KSA
     @property
@@ -275,6 +280,8 @@ class LearningPlanGoalCourse(TimeStampedModel):
         LearningPlanGoal, on_delete=models.CASCADE, related_name='courses')
     xds_course = models.ForeignKey(
         Course, on_delete=models.CASCADE, related_name='xds_courses')
+    elrr_course_id = models.UUIDField(
+        null=True, blank=True)
 
     # Return the name of the course
     @property

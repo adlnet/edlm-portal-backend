@@ -1,5 +1,6 @@
 import logging
 
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from rest_framework_guardian.serializers import \
@@ -12,6 +13,14 @@ from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
 from configuration.utils.portal_utils import confusable_homoglyphs_check
 from external.models import Competency, Course, Job, Ksa
 from external.utils.eccr_utils import validate_eccr_item
+from external.utils.elrr_utils import (create_elrr_goal,
+                                       get_or_create_elrr_person_by_email,
+                                       build_goal_data_for_elrr,
+                                       store_ksa_to_elrr_goal,
+                                       store_course_to_elrr_goal,
+                                       remove_ksa_from_elrr_goal,
+                                       remove_course_from_elrr_goal,
+                                       sync_goal_updates_to_elrr)
 from external.utils.xds_utils import validate_xds_course
 from users.models import User
 from vacancies.models import Vacancy
@@ -24,6 +33,7 @@ ECCR_EXCEPTION_MSG = "ECCR validation failed, please check logs for details"
 XDS_FAILED_ERROR = "Failed to validate XDS item: "
 XDS_EXCEPTION_MSG = "XDS validation failed, please check logs for details"
 PARENT_ID_UPDATE_ERROR = "Cannot change the parent id"
+ELRR_SYNC_ERROR = "Failed to sync with ELRR, please check logs for details"
 
 
 class ProfileAnswerSerializer(serializers.ModelSerializer):
@@ -220,12 +230,14 @@ class LearningPlanGoalCourseSerializer(serializers.ModelSerializer,
         read_only=True
     )
     course_name = serializers.ReadOnlyField()
+    elrr_course_id = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = LearningPlanGoalCourse
         fields = ['id', 'plan_goal', 'course_name',
                   'course_external_reference',
-                  'xds_course', 'modified', 'created',]
+                  'xds_course', 'elrr_course_id',
+                  'modified', 'created',]
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
 
@@ -252,25 +264,51 @@ class LearningPlanGoalCourseSerializer(serializers.ModelSerializer,
                     )
             validated_data['xds_course'] = course
 
-        learning_plan_goal_course = LearningPlanGoalCourse.objects.create(
-            **validated_data
-        )
+        with transaction.atomic():
+            learning_plan_goal_course = LearningPlanGoalCourse.objects.create(
+                **validated_data
+            )
+
+            # Store to ELRR and store the returned ID
+            goal = learning_plan_goal_course.plan_goal
+            if goal.elrr_goal_id:
+                try:
+                    elrr_learning_resource_id = store_course_to_elrr_goal(
+                        learning_plan_goal_course,
+                        str(goal.elrr_goal_id)
+                    )
+
+                    # Store the ELRR learning resource ID
+                    learning_plan_goal_course.elrr_course_id = \
+                        elrr_learning_resource_id
+                    learning_plan_goal_course.save(
+                        update_fields=['elrr_course_id'])
+
+                except (ConnectionError, ValueError) as e:
+                    logger.error(f'Failed to store course to ELRR: {e}')
+                    raise serializers.ValidationError(
+                        ELRR_SYNC_ERROR
+                    )
 
         return learning_plan_goal_course
 
     def update(self, instance, validated_data):
         """
-        Update based on external reference
+        Update based on external reference and
+        sync to ELRR if course updated
         """
+        goal = instance.plan_goal
+
         if 'plan_goal' in validated_data:
             new_goal = validated_data['plan_goal']
-            if instance.plan_goal != new_goal:
-                raise serializers.ValidationError(
-                    PARENT_ID_UPDATE_ERROR
-                )
+            if goal != new_goal:
+                raise serializers.ValidationError(PARENT_ID_UPDATE_ERROR)
 
+        course_changed = False
         if 'course_external_reference' in validated_data:
             reference = validated_data.pop('course_external_reference')
+            old_elrr_course_id = instance.elrr_course_id
+            old_course = instance.xds_course
             course = Course.objects.filter(reference=reference).first()
 
             if course is None:
@@ -282,15 +320,45 @@ class LearningPlanGoalCourseSerializer(serializers.ModelSerializer,
                     )
                 except Exception as e:
                     logger.error(f"{XDS_FAILED_ERROR} {e}")
-                    raise serializers.ValidationError(
-                        XDS_EXCEPTION_MSG
-                    )
+                    raise serializers.ValidationError(XDS_EXCEPTION_MSG)
+
             validated_data['xds_course'] = course
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+            if old_course != course:
+                course_changed = True
+                # Reset ELRR course ID
+                validated_data['elrr_course_id'] = None
 
-        instance.save()
+        with transaction.atomic():
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            instance.save()
+
+            if course_changed and goal.elrr_goal_id:
+                if old_elrr_course_id:
+                    try:
+                        remove_course_from_elrr_goal(
+                            str(goal.elrr_goal_id),
+                            str(old_elrr_course_id)
+                        )
+                    except (ConnectionError, ValueError) as e:
+                        logger.error(f'Failed to remove old course'
+                                     f' from ELRR: {e}')
+                        raise serializers.ValidationError(
+                            ELRR_SYNC_ERROR
+                        )
+
+                try:
+                    elrr_learning_resource_id = store_course_to_elrr_goal(
+                        instance, str(goal.elrr_goal_id))
+                    instance.elrr_course_id = elrr_learning_resource_id
+                    instance.save(update_fields=['elrr_course_id'])
+                except (ConnectionError, ValueError) as e:
+                    logger.error(f'Failed to add new course to ELRR: {e}')
+                    raise serializers.ValidationError(
+                        ELRR_SYNC_ERROR
+                    )
+
         return instance
 
     def get_permissions_map(self, created):
@@ -334,12 +402,14 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
         read_only=True
     )
     ksa_name = serializers.ReadOnlyField()
+    elrr_ksa_id = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = LearningPlanGoalKsa
         fields = ['id', 'plan_goal', 'ksa_external_reference',
                   'ksa_name', 'eccr_ksa', 'current_proficiency',
-                  'target_proficiency', 'modified', 'created',]
+                  'target_proficiency', 'elrr_ksa_id',
+                  'modified', 'created',]
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
 
@@ -366,27 +436,47 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
                     )
             validated_data['eccr_ksa'] = ksa
 
-        learning_plan_goal_ksa = LearningPlanGoalKsa.objects.create(
-            **validated_data
-        )
+        with transaction.atomic():
+            learning_plan_goal_ksa = LearningPlanGoalKsa.objects.create(
+                **validated_data
+            )
+
+            goal = learning_plan_goal_ksa.plan_goal
+            if goal.elrr_goal_id:
+                try:
+                    elrr_competency_id = store_ksa_to_elrr_goal(
+                        learning_plan_goal_ksa,
+                        str(goal.elrr_goal_id)
+                    )
+
+                    # Store the ELRR competency ID
+                    learning_plan_goal_ksa.elrr_ksa_id = elrr_competency_id
+                    learning_plan_goal_ksa.save(update_fields=['elrr_ksa_id'])
+
+                except (ConnectionError, ValueError) as e:
+                    logger.error(f'Failed to store KSA to ELRR: {e}')
+                    raise serializers.ValidationError(
+                        ELRR_SYNC_ERROR
+                    )
 
         return learning_plan_goal_ksa
 
     def update(self, instance, validated_data):
-        """
-        Update based on external reference
-        """
+        """Update based on external reference"""
+        goal = instance.plan_goal
+
         if 'plan_goal' in validated_data:
             new_goal = validated_data['plan_goal']
-            if instance.plan_goal != new_goal:
-                raise serializers.ValidationError(
-                    PARENT_ID_UPDATE_ERROR
-                )
+            if goal != new_goal:
+                raise serializers.ValidationError(PARENT_ID_UPDATE_ERROR)
 
+        ksa_changed = False
         if 'ksa_external_reference' in validated_data:
             reference = validated_data.pop('ksa_external_reference')
-            ksa = Ksa.objects.filter(reference=reference).first()
+            old_elrr_ksa_id = instance.elrr_ksa_id
+            old_ksa = instance.eccr_ksa
 
+            ksa = Ksa.objects.filter(reference=reference).first()
             if ksa is None:
                 try:
                     ksa_name = validate_eccr_item(reference)
@@ -396,15 +486,45 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
                     )
                 except Exception as e:
                     logger.error(f"{ECCR_FAILED_ERROR} {e}")
-                    raise serializers.ValidationError(
-                        ECCR_EXCEPTION_MSG
-                    )
+                    raise serializers.ValidationError(ECCR_EXCEPTION_MSG)
+
             validated_data['eccr_ksa'] = ksa
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+            if old_ksa != ksa:
+                # Reset ELRR KSA ID
+                ksa_changed = True
+                validated_data['elrr_ksa_id'] = None
 
-        instance.save()
+        with transaction.atomic():
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            instance.save()
+
+            if ksa_changed and goal.elrr_goal_id:
+                if old_elrr_ksa_id:
+                    try:
+                        remove_ksa_from_elrr_goal(
+                            str(goal.elrr_goal_id),
+                            str(old_elrr_ksa_id)
+                        )
+                    except (ConnectionError, ValueError) as e:
+                        logger.error(f'Failed to remove old KSA from ELRR:'
+                                     f' {e}')
+                        raise serializers.ValidationError(
+                            ELRR_SYNC_ERROR
+                        )
+
+                try:
+                    elrr_competency_id = store_ksa_to_elrr_goal(
+                        instance, str(goal.elrr_goal_id))
+                    instance.elrr_ksa_id = elrr_competency_id
+                    instance.save(update_fields=['elrr_ksa_id'])
+                except (ConnectionError, ValueError) as e:
+                    logger.error(f'Failed to add new KSA to ELRR: {e}')
+                    raise serializers.ValidationError(
+                        ELRR_SYNC_ERROR
+                    )
+
         return instance
 
     def get_permissions_map(self, created):
@@ -445,14 +565,46 @@ class LearningPlanGoalSerializer(serializers.ModelSerializer,
     # Nested read-only Courses
     courses = LearningPlanGoalCourseReadSerializer(
         many=True, read_only=True)
+    elrr_goal_id = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = LearningPlanGoal
         fields = ['id', 'plan_competency', 'goal_name', 'timeline',
                   'resources_support', 'obstacles', 'resources_support_other',
-                  'obstacles_other', 'ksas', 'courses', 'modified', 'created']
+                  'obstacles_other', 'ksas', 'courses', 'elrr_goal_id',
+                  'modified', 'created']
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
+
+    def create(self, validated_data):
+        """
+        Create LearningPlanGoal and store to ELRR
+        """
+        with transaction.atomic():
+            learning_plan_goal = LearningPlanGoal.objects.create(
+                **validated_data)
+            learner = learning_plan_goal.plan_competency.learning_plan.learner
+
+            try:
+                person_id = get_or_create_elrr_person_by_email(learner)
+
+                goal_data = build_goal_data_for_elrr(
+                    learning_plan_goal,
+                    person_id
+                )
+
+                elrr_resp = create_elrr_goal(goal_data)
+
+                learning_plan_goal.elrr_goal_id = elrr_resp['id']
+                learning_plan_goal.save(update_fields=['elrr_goal_id'])
+
+            except (ConnectionError, ValueError) as e:
+                logger.error(f'Failed to create ELRR goal: {e}')
+                raise serializers.ValidationError(
+                    ELRR_SYNC_ERROR
+                )
+
+        return learning_plan_goal
 
     def update(self, instance, validated_data):
         """
@@ -465,10 +617,20 @@ class LearningPlanGoalSerializer(serializers.ModelSerializer,
                     PARENT_ID_UPDATE_ERROR
                 )
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+        with transaction.atomic():
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            instance.save()
 
-        instance.save()
+            if instance.elrr_goal_id:
+                try:
+                    sync_goal_updates_to_elrr(instance, validated_data.keys())
+                except (ConnectionError, ValueError) as e:
+                    logger.error(f'Failed to sync goal updates to ELRR: {e}')
+                    raise serializers.ValidationError(
+                        ELRR_SYNC_ERROR
+                    )
+
         return instance
 
     def get_permissions_map(self, created):
@@ -503,7 +665,8 @@ class LearningPlanGoalReadSerializer(serializers.ModelSerializer):
         fields = ['id', 'goal_name', 'timeline',
                   'resources_support', 'obstacles',
                   'resources_support_other',
-                  'obstacles_other', 'ksas', 'courses']
+                  'obstacles_other', 'ksas', 'courses',
+                  'elrr_goal_id']
 
 
 class LearningPlanCompetencySerializer(serializers.ModelSerializer,

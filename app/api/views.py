@@ -1,10 +1,12 @@
 import logging
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Prefetch
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters as filter
 from rest_framework import status, viewsets
+from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_guardian import filters
@@ -31,6 +33,9 @@ from api.utils.xapi_utils import (COURSE_PROGRESS_VERBS,
                                   remove_duplicates)
 from configuration.models import Configuration
 from external.models import LearnerRecord
+from external.utils.elrr_utils import (remove_course_from_elrr_goal,
+                                       remove_goal_from_elrr,
+                                       remove_ksa_from_elrr_goal)
 
 logger = logging.getLogger(__name__)
 
@@ -275,6 +280,23 @@ class LearningPlanGoalCourseViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_403_FORBIDDEN)
         return super().create(request, *args, **kwargs)
 
+    def perform_destroy(self, instance):
+        with transaction.atomic():
+            goal = instance.plan_goal
+            # Remove course from ELRR goal
+            if goal.elrr_goal_id and instance.elrr_course_id:
+                try:
+                    remove_course_from_elrr_goal(
+                        str(goal.elrr_goal_id),
+                        str(instance.elrr_course_id)
+                    )
+                except (ConnectionError, ValueError) as e:
+                    logger.error(f"Error removing course from ELRR goal: {e}")
+                    raise APIException('Failed removing course from ELRR,'
+                                       ' check logs for more details')
+
+            super().perform_destroy(instance)
+
 
 class LearningPlanGoalKsaViewSet(viewsets.ModelViewSet):
     """Viewset for Learning Plan Goal KSAs."""
@@ -291,6 +313,23 @@ class LearningPlanGoalKsaViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_403_FORBIDDEN)
         return super().create(request, *args, **kwargs)
 
+    def perform_destroy(self, instance):
+        with transaction.atomic():
+            goal = instance.plan_goal
+            # Remove KSA from ELRR goal
+            if goal.elrr_goal_id and instance.elrr_ksa_id:
+                try:
+                    remove_ksa_from_elrr_goal(
+                        str(goal.elrr_goal_id),
+                        str(instance.elrr_ksa_id)
+                    )
+                except (ConnectionError, ValueError) as e:
+                    logger.error(f'Error removing KSA from ELRR goal: {e}')
+                    raise APIException('Failed removing KSA from ELRR,'
+                                       ' check logs for more details')
+
+            super().perform_destroy(instance)
+
 
 class LearningPlanGoalViewSet(viewsets.ModelViewSet):
     """Viewset for Learning Plan Goals"""
@@ -306,6 +345,19 @@ class LearningPlanGoalViewSet(viewsets.ModelViewSet):
                             ' to perform this action'},
                             status=status.HTTP_403_FORBIDDEN)
         return super().create(request, *args, **kwargs)
+
+    def perform_destroy(self, instance):
+        with transaction.atomic():
+            # Remove goal from ELRR
+            if instance.elrr_goal_id:
+                try:
+                    remove_goal_from_elrr(str(instance.elrr_goal_id))
+                except (ConnectionError, ValueError) as e:
+                    logger.error(f'Error removing goal from ELRR: {e}')
+                    raise APIException('Failed removing goal from ELRR,'
+                                       ' check logs for more details')
+
+            super().perform_destroy(instance)
 
 
 class LearningPlanCompetencyViewSet(viewsets.ModelViewSet):
