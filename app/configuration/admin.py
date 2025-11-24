@@ -19,6 +19,7 @@ class ConfigurationAdmin(admin.ModelAdmin):
                 "fields": (
                     'target_xds_api',
                     'target_elrr_api',
+                    'target_elrr_api_key',
                     'target_eccr_api',
                 )
             }
