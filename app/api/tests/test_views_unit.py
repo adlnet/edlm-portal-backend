@@ -1,4 +1,5 @@
 import json
+import uuid
 from unittest.mock import patch
 
 from django.test import tag
@@ -16,6 +17,7 @@ API_LEARNING_PLANS_DETAIL = 'api:learning-plans-detail'
 API_LEARNING_PLAN_COMPETENCIES_DETAIL = 'api:learning-plan-competencies-detail'
 API_LEARNING_PLAN_GOALS_DETAIL = 'api:learning-plan-goals-detail'
 API_LEARNING_PLAN_GOAL_KSAS_DETAIL = 'api:learning-plan-goal-ksas-detail'
+API_LEARNING_PLAN_GOAL_COURSES_DETAIL = 'api:learning-plan-goal-courses-detail'
 EXPECTED_ERROR = "Authentication credentials were not provided."
 
 
@@ -509,13 +511,32 @@ class ViewTests(TestSetUp):
         self.assertEqual(self.learning_plan_goal.timeline,
                          responseDict['timeline'])
 
-    def test_learning_plan_goal_requests_post(self):
+    @patch('api.serializers.create_elrr_goal')
+    @patch('api.serializers.build_goal_data_for_elrr')
+    @patch('api.serializers.get_or_create_elrr_person_by_email')
+    def test_learning_plan_goal_requests_post(self,
+                                              mock_person,
+                                              mock_build,
+                                              mock_create):
         """Test that making a post request to the learning plan goal api with
         valid data creates a learning plan goal"""
+        test_person_uuid = str(uuid.uuid4())
+        test_goal_id = str(uuid.uuid4())
+        mock_person.return_value = test_person_uuid
+        mock_build.return_value = {
+            'personId': test_person_uuid,
+            'name': 'test goal 4242',
+            'type': 'SELF'
+        }
+        mock_create.return_value = {
+            'id': test_goal_id,
+            'name': 'test goal 4242'
+        }
+
         self.learning_plan.save()
         self.competency.save()
         self.learning_plan_competency.save()
-        timeline = "3 months"
+        timeline = "3-6 months"
         goal_name = "test goal"
 
         url = reverse('api:learning-plan-goals-list')
@@ -533,6 +554,9 @@ class ViewTests(TestSetUp):
         self.assertEqual(self.learning_plan_competency.pk,
                          responseDict['plan_competency'])
         self.assertIsNotNone(responseDict['id'])
+        self.assertIsNotNone(responseDict['elrr_goal_id'])
+        self.assertEqual(test_goal_id,
+                         responseDict['elrr_goal_id'])
 
     def test_learning_plan_goal_ksa_requests_no_auth(self):
         """Test that making a get request to the learning
@@ -617,6 +641,178 @@ class ViewTests(TestSetUp):
                          responseDict['plan_goal'])
         self.assertEqual(ksa_name, responseDict['ksa_name'])
         self.assertIsNotNone(responseDict['id'])
+
+    @patch('api.serializers.validate_eccr_item')
+    def test_learning_plan_competency_update(self, mock_eccr):
+        """Test updaing competency reference"""
+        mock_eccr.return_value = "updated competency"
+
+        self.learning_plan.save()
+        self.competency.save()
+        self.learning_plan_competency.save()
+
+        url = reverse(API_LEARNING_PLAN_COMPETENCIES_DETAIL,
+                      kwargs={'pk': self.learning_plan_competency.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.patch(
+            url,
+            {'competency_external_reference': 'testNewFramework/333'}
+        )
+        responseDict = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(responseDict['plan_competency_name'],
+                         'updated competency')
+
+    @patch('api.serializers.store_ksa_to_elrr_goal')
+    @patch('api.serializers.remove_ksa_from_elrr_goal')
+    @patch('api.serializers.validate_eccr_item')
+    def test_learning_plan_goal_ksa_update(self,
+                                           mock_eccr,
+                                           mock_remove,
+                                           mock_store):
+        """Test that making a update request to the learning plan"""
+        mock_eccr.return_value = 'ksa-3333'
+        new_elrr_ksa_id = str(uuid.uuid4())
+        mock_store.return_value = new_elrr_ksa_id
+
+        self.learning_plan.save()
+        self.competency.save()
+        self.learning_plan_competency.save()
+        self.learning_plan_goal.elrr_goal_id = uuid.uuid4()
+        self.learning_plan_goal.save()
+        self.ksa.save()
+        self.learning_plan_goal_ksa.elrr_ksa_id = uuid.uuid4()
+        self.learning_plan_goal_ksa.save()
+
+        url = reverse(API_LEARNING_PLAN_GOAL_KSAS_DETAIL,
+                      kwargs={'pk': self.learning_plan_goal_ksa.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.patch(
+            url,
+            {'ksa_external_reference': 'framework2/ksa-3333'}
+        )
+        responseDict = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(responseDict['elrr_ksa_id'], new_elrr_ksa_id)
+
+    @patch('api.serializers.store_course_to_elrr_goal')
+    @patch('api.serializers.remove_course_from_elrr_goal')
+    @patch('api.serializers.validate_xds_course')
+    def test_learning_plan_goal_course_update(self,
+                                              mock_xds,
+                                              mock_remove,
+                                              mock_store):
+        """Test that making a update request to the
+        learning plan goal course"""
+        mock_xds.return_value = 'course-998'
+        new_elrr_course_id = str(uuid.uuid4())
+        mock_store.return_value = new_elrr_course_id
+
+        self.learning_plan.save()
+        self.competency.save()
+        self.learning_plan_competency.save()
+        self.learning_plan_goal.elrr_goal_id = uuid.uuid4()
+        self.learning_plan_goal.save()
+        self.course.save()
+        self.learning_plan_goal_course.elrr_course_id = uuid.uuid4()
+        self.learning_plan_goal_course.save()
+
+        url = reverse(API_LEARNING_PLAN_GOAL_COURSES_DETAIL,
+                      kwargs={'pk': self.learning_plan_goal_course.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.patch(
+            url,
+            {'course_external_reference': 'test-xds-course-998'}
+        )
+        responseDict = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(responseDict['elrr_course_id'], new_elrr_course_id)
+
+    @patch('api.serializers.sync_goal_updates_to_elrr')
+    def test_learning_plan_goal_update(self, mock_sync):
+        """Test that updating goal syncs to ELRR"""
+        self.learning_plan.save()
+        self.competency.save()
+        self.learning_plan_competency.save()
+        self.learning_plan_goal.elrr_goal_id = uuid.uuid4()
+        self.learning_plan_goal.save()
+
+        url = reverse(API_LEARNING_PLAN_GOALS_DETAIL,
+                      kwargs={'pk': self.learning_plan_goal.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.patch(
+            url,
+            {'goal_name': 'Updated Test Goal Name'}
+        )
+        responseDict = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(responseDict['goal_name'], 'Updated Test Goal Name')
+
+    @patch('api.views.remove_goal_from_elrr')
+    def test_learning_plan_goal_delete_with_elrr_id(self, mock_remove):
+        """Test deleting a learning plan goal with an elrr_goal_id"""
+        self.learning_plan.save()
+        self.competency.save()
+        self.learning_plan_competency.save()
+        self.learning_plan_goal.elrr_goal_id = uuid.uuid4()
+        self.learning_plan_goal.save()
+
+        url = reverse(API_LEARNING_PLAN_GOALS_DETAIL,
+                      kwargs={'pk': self.learning_plan_goal.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch('api.views.remove_ksa_from_elrr_goal')
+    def test_learning_plan_goal_ksa_delete_with_elrr_id(self, mock_remove):
+        """Test deleting a learning plan goal ksa with an elrr_ksa_id"""
+        self.learning_plan.save()
+        self.competency.save()
+        self.learning_plan_competency.save()
+        self.learning_plan_goal.elrr_goal_id = uuid.uuid4()
+        self.learning_plan_goal.save()
+        self.ksa.save()
+        self.learning_plan_goal_ksa.elrr_ksa_id = uuid.uuid4()
+        self.learning_plan_goal_ksa.save()
+
+        url = reverse(API_LEARNING_PLAN_GOAL_KSAS_DETAIL,
+                      kwargs={'pk': self.learning_plan_goal_ksa.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    @patch('api.views.remove_course_from_elrr_goal')
+    def test_learning_plan_goal_course_delete_with_elrr_id(self, mock_remove):
+        """Test  deleting a learning plan goal course with an
+        elrr_course_id"""
+        self.learning_plan.save()
+        self.competency.save()
+        self.learning_plan_competency.save()
+        self.learning_plan_goal.elrr_goal_id = uuid.uuid4()
+        self.learning_plan_goal.save()
+        self.course.save()
+        self.learning_plan_goal_course.elrr_course_id = uuid.uuid4()
+        self.learning_plan_goal_course.save()
+
+        url = reverse(API_LEARNING_PLAN_GOAL_COURSES_DETAIL,
+                      kwargs={'pk': self.learning_plan_goal_course.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
 
 @tag("unit")

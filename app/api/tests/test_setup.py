@@ -3,9 +3,9 @@ from rest_framework.test import APITestCase
 
 from api.models import (CandidateList, CandidateRanking, LearningPlan,
                         LearningPlanCompetency, LearningPlanGoal,
-                        LearningPlanGoalKsa, ProfileAnswer,
-                        ProfileQuestion, ProfileResponse,
-                        TrainingPlan)
+                        LearningPlanGoalCourse, LearningPlanGoalKsa,
+                        ProfileAnswer, ProfileQuestion,
+                        ProfileResponse, TrainingPlan)
 from configuration.models import Configuration
 from external.models import Competency, Course, Job, Ksa
 from users.models import User
@@ -166,6 +166,11 @@ class TestSetUp(APITestCase):
         self.course = Course(
             name=course_name,
             reference=reference
+        )
+
+        self.learning_plan_goal_course = LearningPlanGoalCourse(
+            plan_goal=self.learning_plan_goal,
+            xds_course=self.course
         )
 
         # Configuration
