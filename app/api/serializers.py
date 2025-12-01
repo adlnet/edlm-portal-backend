@@ -18,8 +18,6 @@ from external.utils.elrr_utils import (create_elrr_goal,
                                        build_goal_data_for_elrr,
                                        store_ksa_to_elrr_goal,
                                        store_course_to_elrr_goal,
-                                       remove_ksa_from_elrr_goal,
-                                       remove_course_from_elrr_goal,
                                        sync_goal_updates_to_elrr)
 from external.utils.xds_utils import validate_xds_course
 from users.models import User
@@ -230,14 +228,12 @@ class LearningPlanGoalCourseSerializer(serializers.ModelSerializer,
         read_only=True
     )
     course_name = serializers.ReadOnlyField()
-    elrr_course_id = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = LearningPlanGoalCourse
         fields = ['id', 'plan_goal', 'course_name',
                   'course_external_reference',
-                  'xds_course', 'elrr_course_id',
-                  'modified', 'created',]
+                  'xds_course', 'modified', 'created',]
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
 
@@ -326,8 +322,6 @@ class LearningPlanGoalCourseSerializer(serializers.ModelSerializer,
 
             if old_course != course:
                 course_changed = True
-                # Reset ELRR course ID
-                validated_data['elrr_course_id'] = None
 
         with transaction.atomic():
             for attr, value in validated_data.items():
@@ -335,22 +329,12 @@ class LearningPlanGoalCourseSerializer(serializers.ModelSerializer,
             instance.save()
 
             if course_changed and goal.elrr_goal_id:
-                if old_elrr_course_id:
-                    try:
-                        remove_course_from_elrr_goal(
-                            str(goal.elrr_goal_id),
-                            str(old_elrr_course_id)
-                        )
-                    except (ConnectionError, ValueError) as e:
-                        logger.error(f'Failed to remove old course'
-                                     f' from ELRR: {e}')
-                        raise serializers.ValidationError(
-                            ELRR_SYNC_ERROR
-                        )
-
                 try:
                     elrr_learning_resource_id = store_course_to_elrr_goal(
-                        instance, str(goal.elrr_goal_id))
+                        instance,
+                        str(goal.elrr_goal_id),
+                        str(old_elrr_course_id)
+                    )
                     instance.elrr_course_id = elrr_learning_resource_id
                     instance.save(update_fields=['elrr_course_id'])
                 except (ConnectionError, ValueError) as e:
@@ -402,14 +386,12 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
         read_only=True
     )
     ksa_name = serializers.ReadOnlyField()
-    elrr_ksa_id = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = LearningPlanGoalKsa
         fields = ['id', 'plan_goal', 'ksa_external_reference',
                   'ksa_name', 'eccr_ksa', 'current_proficiency',
-                  'target_proficiency', 'elrr_ksa_id',
-                  'modified', 'created',]
+                  'target_proficiency', 'modified', 'created',]
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
 
@@ -491,9 +473,7 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
             validated_data['eccr_ksa'] = ksa
 
             if old_ksa != ksa:
-                # Reset ELRR KSA ID
                 ksa_changed = True
-                validated_data['elrr_ksa_id'] = None
 
         with transaction.atomic():
             for attr, value in validated_data.items():
@@ -501,22 +481,12 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
             instance.save()
 
             if ksa_changed and goal.elrr_goal_id:
-                if old_elrr_ksa_id:
-                    try:
-                        remove_ksa_from_elrr_goal(
-                            str(goal.elrr_goal_id),
-                            str(old_elrr_ksa_id)
-                        )
-                    except (ConnectionError, ValueError) as e:
-                        logger.error(f'Failed to remove old KSA from ELRR:'
-                                     f' {e}')
-                        raise serializers.ValidationError(
-                            ELRR_SYNC_ERROR
-                        )
-
                 try:
                     elrr_competency_id = store_ksa_to_elrr_goal(
-                        instance, str(goal.elrr_goal_id))
+                        instance,
+                        str(goal.elrr_goal_id),
+                        str(old_elrr_ksa_id)
+                    )
                     instance.elrr_ksa_id = elrr_competency_id
                     instance.save(update_fields=['elrr_ksa_id'])
                 except (ConnectionError, ValueError) as e:
@@ -565,13 +535,12 @@ class LearningPlanGoalSerializer(serializers.ModelSerializer,
     # Nested read-only Courses
     courses = LearningPlanGoalCourseReadSerializer(
         many=True, read_only=True)
-    elrr_goal_id = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = LearningPlanGoal
         fields = ['id', 'plan_competency', 'goal_name', 'timeline',
                   'resources_support', 'obstacles', 'resources_support_other',
-                  'obstacles_other', 'ksas', 'courses', 'elrr_goal_id',
+                  'obstacles_other', 'ksas', 'courses',
                   'modified', 'created']
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}

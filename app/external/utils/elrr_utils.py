@@ -495,14 +495,18 @@ def get_or_create_elrr_competency(reference, name):
                               ' check for more details')
 
 
-def store_ksa_to_elrr_goal(learning_plan_goal_ksa, elrr_goal_id):
+def store_ksa_to_elrr_goal(learning_plan_goal_ksa,
+                           elrr_goal_id,
+                           old_elrr_ksa_id=None):
     """
     Store a goal KSA to an ELRR goal and add it to the
-    elrr goal's competencyIds array
+    elrr goal's competencyIds array.
+    If old_elrr_ksa_id is provided, remove it from the goal
 
     Args:
         learning_plan_goal_ksa: LearningPlanGoalKsa instance
         elrr_goal_id: ELRR Goal UUID string
+        old_elrr_ksa_id (optional): ELRR Competency UUID string
 
     Returns:
         The ELRR competency UUID
@@ -515,13 +519,18 @@ def store_ksa_to_elrr_goal(learning_plan_goal_ksa, elrr_goal_id):
     competency_id = elrr_competency.get('id')
 
     goal_data = get_elrr_goal(elrr_goal_id)
+    competency_ids = goal_data.get('competencyIds', [])
+
+    # If old ELRR competency ID provided, remove it
+    if old_elrr_ksa_id and old_elrr_ksa_id in competency_ids:
+        competency_ids.remove(old_elrr_ksa_id)
 
     # Add competency if not already existing in the arr
-    competency_ids = goal_data.get('competencyIds', [])
     if competency_id not in competency_ids:
         competency_ids.append(competency_id)
-        goal_data['competencyIds'] = competency_ids
-        update_elrr_goal(goal_data)
+
+    goal_data['competencyIds'] = competency_ids
+    update_elrr_goal(goal_data)
 
     return competency_id
 
@@ -559,7 +568,7 @@ def get_or_create_elrr_learning_resource(reference, name):
     try:
         get_resp = requests.get(
             get_elrr_api_url() + 'learningresource',
-            params={'number': reference},
+            params={'iri': reference},
             auth=TokenAuth(),
             timeout=3.0
         )
@@ -599,15 +608,18 @@ def get_or_create_elrr_learning_resource(reference, name):
                               ' check for more details')
 
 
-def store_course_to_elrr_goal(learning_plan_goal_course, elrr_goal_id):
+def store_course_to_elrr_goal(learning_plan_goal_course,
+                              elrr_goal_id,
+                              old_elrr_course_id=None):
     """
     Store a course to an ELRR goal and add it to
-    the goal's learningResourceIds array
+    the goal's learningResourceIds array.
+    If old_elrr_course_id is provided, remove it from the goal
 
     Args:
-        learning_plan_goal_course: LearningPlanGoalCourse instance
+        learning_plan_goal_course: PlanGoalCourse instance
         elrr_goal_id: ELRR Goal UUID string
-
+        old_elrr_course_id (optional): ELRR LR UUID string to remove
     Returns:
         The ELRR learning resource UUID
     """
@@ -619,13 +631,18 @@ def store_course_to_elrr_goal(learning_plan_goal_course, elrr_goal_id):
     learning_resource_id = elrr_learning_resource.get('id')
 
     goal_data = get_elrr_goal(elrr_goal_id)
+    learning_resource_ids = goal_data.get('learningResourceIds', [])
+
+    # If old ELRR course ID provided, remove it
+    if old_elrr_course_id and old_elrr_course_id in learning_resource_ids:
+        learning_resource_ids.remove(old_elrr_course_id)
 
     # Add learning resource if not already existing in the arr
-    learning_resource_ids = goal_data.get('learningResourceIds', [])
     if learning_resource_id not in learning_resource_ids:
         learning_resource_ids.append(learning_resource_id)
-        goal_data['learningResourceIds'] = learning_resource_ids
-        update_elrr_goal(goal_data)
+
+    goal_data['learningResourceIds'] = learning_resource_ids
+    update_elrr_goal(goal_data)
 
     return learning_resource_id
 

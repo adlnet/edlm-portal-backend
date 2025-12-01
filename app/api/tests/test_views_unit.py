@@ -554,9 +554,6 @@ class ViewTests(TestSetUp):
         self.assertEqual(self.learning_plan_competency.pk,
                          responseDict['plan_competency'])
         self.assertIsNotNone(responseDict['id'])
-        self.assertIsNotNone(responseDict['elrr_goal_id'])
-        self.assertEqual(test_goal_id,
-                         responseDict['elrr_goal_id'])
 
     def test_learning_plan_goal_ksa_requests_no_auth(self):
         """Test that making a get request to the learning
@@ -666,11 +663,9 @@ class ViewTests(TestSetUp):
                          'updated competency')
 
     @patch('api.serializers.store_ksa_to_elrr_goal')
-    @patch('api.serializers.remove_ksa_from_elrr_goal')
     @patch('api.serializers.validate_eccr_item')
     def test_learning_plan_goal_ksa_update(self,
                                            mock_eccr,
-                                           mock_remove,
                                            mock_store):
         """Test that making a update request to the learning plan"""
         mock_eccr.return_value = 'ksa-3333'
@@ -697,14 +692,12 @@ class ViewTests(TestSetUp):
         responseDict = json.loads(response.content)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(responseDict['elrr_ksa_id'], new_elrr_ksa_id)
+        self.assertEqual(responseDict['ksa_name'], 'ksa-3333')
 
     @patch('api.serializers.store_course_to_elrr_goal')
-    @patch('api.serializers.remove_course_from_elrr_goal')
     @patch('api.serializers.validate_xds_course')
     def test_learning_plan_goal_course_update(self,
                                               mock_xds,
-                                              mock_remove,
                                               mock_store):
         """Test that making a update request to the
         learning plan goal course"""
@@ -732,7 +725,7 @@ class ViewTests(TestSetUp):
         responseDict = json.loads(response.content)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(responseDict['elrr_course_id'], new_elrr_course_id)
+        self.assertEqual(responseDict['course_name'], 'course-998')
 
     @patch('api.serializers.sync_goal_updates_to_elrr')
     def test_learning_plan_goal_update(self, mock_sync):
