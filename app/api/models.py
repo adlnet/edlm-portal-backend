@@ -189,14 +189,27 @@ class LearningPlanCompetency(TimeStampedModel):
 
 class LearningPlanGoal(TimeStampedModel):
     """Model to store goals for a learning plan"""
+    TIMELINE_CHOICES = Choices(
+        '1-3 months',
+        '3-6 months',
+        '6-9 months',
+        '9-12 months',
+        '12-18 months',
+        '18-24 months',
+        '2-2.5 years',
+        '2.5-3 years',
+        '3-3.5 years',
+        '3.5-4 years',
+        '4-4.5 years',
+        '4.5-5 years'
+    )
+
     plan_competency = models.ForeignKey(
         LearningPlanCompetency, on_delete=models.CASCADE, related_name='goals')
     goal_name = models.TextField(validators=[
         RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
     ])
-    timeline = models.CharField(max_length=20, validators=[
-        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
-    ])
+    timeline = models.CharField(max_length=20, choices=TIMELINE_CHOICES)
 
     # store a list of selected choices
     resources_support = ArrayField(
