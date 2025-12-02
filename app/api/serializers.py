@@ -300,11 +300,11 @@ class LearningPlanGoalCourseSerializer(serializers.ModelSerializer,
             if goal != new_goal:
                 raise serializers.ValidationError(PARENT_ID_UPDATE_ERROR)
 
+        old_elrr_course_id = instance.elrr_course_id
+        old_course = instance.xds_course
         course_changed = False
         if 'course_external_reference' in validated_data:
             reference = validated_data.pop('course_external_reference')
-            old_elrr_course_id = instance.elrr_course_id
-            old_course = instance.xds_course
             course = Course.objects.filter(reference=reference).first()
 
             if course is None:
@@ -452,13 +452,13 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
             if goal != new_goal:
                 raise serializers.ValidationError(PARENT_ID_UPDATE_ERROR)
 
+        old_elrr_ksa_id = instance.elrr_ksa_id
+        old_ksa = instance.eccr_ksa
         ksa_changed = False
         if 'ksa_external_reference' in validated_data:
             reference = validated_data.pop('ksa_external_reference')
-            old_elrr_ksa_id = instance.elrr_ksa_id
-            old_ksa = instance.eccr_ksa
-
             ksa = Ksa.objects.filter(reference=reference).first()
+
             if ksa is None:
                 try:
                     ksa_name = validate_eccr_item(reference)
