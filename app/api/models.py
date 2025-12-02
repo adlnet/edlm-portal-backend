@@ -189,14 +189,26 @@ class LearningPlanCompetency(TimeStampedModel):
 
 class LearningPlanGoal(TimeStampedModel):
     """Model to store goals for a learning plan"""
+    class TimeLineChoices(models.IntegerChoices):
+        MONTHS_3 = 3, '1-3 months'
+        MONTHS_6 = 6, '3-6 months'
+        MONTHS_9 = 9, '6-9 months'
+        MONTHS_12 = 12, '9-12 months'
+        MONTHS_18 = 18, '12-18 months'
+        MONTHS_24 = 24, '18-24 months'
+        MONTHS_30 = 30, '2-2.5 years'
+        MONTHS_36 = 36, '2.5-3 years'
+        MONTHS_42 = 42, '3-3.5 years'
+        MONTHS_48 = 48, '3.5-4 years'
+        MONTHS_54 = 54, '4-4.5 years'
+        MONTHS_60 = 60, '4.5-5 years'
+
     plan_competency = models.ForeignKey(
         LearningPlanCompetency, on_delete=models.CASCADE, related_name='goals')
     goal_name = models.TextField(validators=[
         RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
     ])
-    timeline = models.CharField(max_length=20, validators=[
-        RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
-    ])
+    timeline = models.IntegerField(choices=TimeLineChoices.choices)
 
     # store a list of selected choices
     resources_support = ArrayField(
@@ -226,6 +238,9 @@ class LearningPlanGoal(TimeStampedModel):
         RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
     ])
 
+    elrr_goal_id = models.UUIDField(
+        null=True, blank=True)
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         self.plan_competency.save(update_fields=['modified',])
@@ -250,6 +265,8 @@ class LearningPlanGoalKsa(TimeStampedModel):
     target_proficiency = models.CharField(max_length=20, validators=[
         RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
     ])
+    elrr_ksa_id = models.UUIDField(
+        null=True, blank=True)
 
     # Return the name of the KSA
     @property
@@ -275,6 +292,8 @@ class LearningPlanGoalCourse(TimeStampedModel):
         LearningPlanGoal, on_delete=models.CASCADE, related_name='courses')
     xds_course = models.ForeignKey(
         Course, on_delete=models.CASCADE, related_name='xds_courses')
+    elrr_course_id = models.UUIDField(
+        null=True, blank=True)
 
     # Return the name of the course
     @property
