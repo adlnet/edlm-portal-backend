@@ -128,7 +128,7 @@ class TestSetUp(APITestCase):
 
         # Learning Plan Goal
         goal_name = "Test Goal"
-        timeline = "3 months"
+        timeline = 3
         resources_support = ["test_resource1", "test_resource2"]
         obstacles = ["test_obstacle1", "test_obstacle2"]
         resources_support_other = "Other test resource"

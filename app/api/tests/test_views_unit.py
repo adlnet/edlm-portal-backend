@@ -536,7 +536,7 @@ class ViewTests(TestSetUp):
         self.learning_plan.save()
         self.competency.save()
         self.learning_plan_competency.save()
-        timeline = "3-6 months"
+        timeline = 6
         goal_name = "test goal"
 
         url = reverse('api:learning-plan-goals-list')

@@ -210,8 +210,7 @@ def calculate_goal_achieved_by_date(start_date, timeline):
 
     Args:
         start_date: goal creation date (datetime)
-        timeline: time line string such as '3-6 months',
-        '2-2.5 years'
+        timeline: total month (int)
 
     Returns:
         start_date + months or none
@@ -219,21 +218,7 @@ def calculate_goal_achieved_by_date(start_date, timeline):
     if not timeline:
         return None
 
-    # Examples: '3-6 months', '2-2.5 years'
-    timeline_parts = timeline.split()
-    # '3-6' or '2-2.5'
-    timeline_range = timeline_parts[0]
-    # months or years
-    timeline_unit = timeline_parts[-1]
-
-    max_time_value = float(timeline_range.split('-')[-1])
-
-    if timeline_unit == 'months':
-        total_months = int(max_time_value)
-    else:  # years
-        total_months = int(max_time_value * 12)
-
-    return start_date + relativedelta(months=total_months)
+    return start_date + relativedelta(months=timeline)
 
 
 def build_goal_data_for_elrr(learning_plan_goal, person_id):

@@ -429,7 +429,7 @@ class ModelTests(TestSetUp):
         """Test that creating a Learning Plan Goal is successful"""
 
         goal_name = "Test Goal"
-        timeline = "3-6 months"
+        timeline = 6
         resources_support = ["test_resource1", "test_resource2"]
         obstacles = ["test_obstacle1", "test_obstacle2"]
         resources_support_other = "Other test resource"
@@ -458,7 +458,6 @@ class ModelTests(TestSetUp):
         self.assertEqual(lpg.obstacles_other, obstacles_other)
         self.assertIn(str(self.learning_plan_competency), str(lpg))
         self.assertIn(goal_name, str(lpg))
-        self.assertIn(timeline, str(lpg))
         self.assertEqual(LearningPlanGoal.objects.all().count(), 1)
         self.assertEqual(self.learning_plan_competency.goals.count(), 1)
         self.assertIn(str(lpg.pk), lpg.get_absolute_url())

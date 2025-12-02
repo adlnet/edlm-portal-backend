@@ -467,7 +467,7 @@ class UtilsTests(TestSetUp):
     def test_elrr_calculate_goal_achieved_by_date_months(self):
         """Test calculation of goal achieved by date (months)"""
         start_date = timezone.now()
-        timeline = '3-6 months'
+        timeline = 6
 
         actual_date = calculate_goal_achieved_by_date(start_date,
                                                       timeline)
@@ -482,7 +482,7 @@ class UtilsTests(TestSetUp):
     def test_elrr_calculate_goal_achieved_by_date_years(self):
         """Test calculation of goal achieved by date (years)"""
         start_date = timezone.now()
-        timeline = '2-2.5 years'
+        timeline = 30
 
         actual_date = calculate_goal_achieved_by_date(start_date,
                                                       timeline)
