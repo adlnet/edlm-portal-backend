@@ -237,6 +237,26 @@ class LearningPlanGoalCourseSerializer(serializers.ModelSerializer,
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
 
+    def _get_or_create_course(self, reference):
+        """
+        Get existing coure or create new one
+        """
+        course = Course.objects.filter(reference=reference).first()
+
+        if course is None:
+            try:
+                course_name = validate_xds_course(reference)
+                course = Course.objects.create(
+                    reference=reference,
+                    name=course_name
+                )
+            except Exception as e:
+                logger.error(f"{XDS_FAILED_ERROR} {e}")
+                raise serializers.ValidationError(
+                    XDS_EXCEPTION_MSG
+                )
+        return course
+
     def create(self, validated_data):
         """
         Create or link to XDS External Course
@@ -244,20 +264,7 @@ class LearningPlanGoalCourseSerializer(serializers.ModelSerializer,
         """
         if 'course_external_reference' in validated_data:
             reference = validated_data.pop('course_external_reference')
-            course = Course.objects.filter(reference=reference).first()
-
-            if course is None:
-                try:
-                    course_name = validate_xds_course(reference)
-                    course = Course.objects.create(
-                        reference=reference,
-                        name=course_name
-                    )
-                except Exception as e:
-                    logger.error(f"{XDS_FAILED_ERROR} {e}")
-                    raise serializers.ValidationError(
-                        XDS_EXCEPTION_MSG
-                    )
+            course = self._get_or_create_course(reference)
             validated_data['xds_course'] = course
 
         with transaction.atomic():
@@ -305,19 +312,7 @@ class LearningPlanGoalCourseSerializer(serializers.ModelSerializer,
         course_changed = False
         if 'course_external_reference' in validated_data:
             reference = validated_data.pop('course_external_reference')
-            course = Course.objects.filter(reference=reference).first()
-
-            if course is None:
-                try:
-                    course_name = validate_xds_course(reference)
-                    course = Course.objects.create(
-                        reference=reference,
-                        name=course_name
-                    )
-                except Exception as e:
-                    logger.error(f"{XDS_FAILED_ERROR} {e}")
-                    raise serializers.ValidationError(XDS_EXCEPTION_MSG)
-
+            course = self._get_or_create_course(reference)
             validated_data['xds_course'] = course
 
             if old_course != course:
@@ -395,6 +390,26 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
 
+    def _get_or_create_ksa(self, reference):
+        """
+        Get existing KSA or create new one
+        """
+        ksa = Ksa.objects.filter(reference=reference).first()
+
+        if ksa is None:
+            try:
+                ksa_name = validate_eccr_item(reference)
+                ksa = Ksa.objects.create(
+                    reference=reference,
+                    name=ksa_name
+                )
+            except Exception as e:
+                logger.error(f"{ECCR_FAILED_ERROR} {e}")
+                raise serializers.ValidationError(
+                    ECCR_EXCEPTION_MSG
+                )
+        return ksa
+
     def create(self, validated_data):
         """
         Create or link to ECCR External KSA
@@ -402,20 +417,7 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
         """
         if 'ksa_external_reference' in validated_data:
             reference = validated_data.pop('ksa_external_reference')
-            ksa = Ksa.objects.filter(reference=reference).first()
-
-            if ksa is None:
-                try:
-                    ksa_name = validate_eccr_item(reference)
-                    ksa = Ksa.objects.create(
-                        reference=reference,
-                        name=ksa_name
-                    )
-                except Exception as e:
-                    logger.error(f"{ECCR_FAILED_ERROR} {e}")
-                    raise serializers.ValidationError(
-                        ECCR_EXCEPTION_MSG
-                    )
+            ksa = self._get_or_create_ksa(reference)
             validated_data['eccr_ksa'] = ksa
 
         with transaction.atomic():
@@ -457,19 +459,7 @@ class LearningPlanGoalKsaSerializer(serializers.ModelSerializer,
         ksa_changed = False
         if 'ksa_external_reference' in validated_data:
             reference = validated_data.pop('ksa_external_reference')
-            ksa = Ksa.objects.filter(reference=reference).first()
-
-            if ksa is None:
-                try:
-                    ksa_name = validate_eccr_item(reference)
-                    ksa = Ksa.objects.create(
-                        reference=reference,
-                        name=ksa_name
-                    )
-                except Exception as e:
-                    logger.error(f"{ECCR_FAILED_ERROR} {e}")
-                    raise serializers.ValidationError(ECCR_EXCEPTION_MSG)
-
+            ksa = self._get_or_create_ksa(reference)
             validated_data['eccr_ksa'] = ksa
 
             if old_ksa != ksa:
