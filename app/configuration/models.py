@@ -38,6 +38,11 @@ class Configuration(models.Model):
             RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
         ])
 
+    target_elrr_api_key = models.TextField(
+        blank=True,
+        help_text='Enter the API Key to use for communicating with ELRR '
+        'Services.')
+
     target_eccr_api = models.CharField(
         max_length=200,
         help_text='Enter the ECCR api endpoint to query',
