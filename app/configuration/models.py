@@ -113,3 +113,32 @@ class AdminConfiguration(models.Model):
 
     config = models.ForeignKey(
         Configuration, on_delete=models.CASCADE, related_name='admins')
+
+class UIConfiguration(models.Model):
+    logo = models.ImageField(
+        upload_to='logos/',
+        help_text='Upload the logo image',
+    )
+
+    portal_name = models.CharField(
+        max_length=200,
+        help_text='Enter the name of the portal',
+        default='EDLM Portal',
+    )
+
+    welcome_message = models.CharField(
+        max_length=1000,
+        help_text='Enter the welcome message for the portal',
+        default='Welcome to the EDLM Portal',
+    )
+
+    def save(self, *args, **kwargs):
+        if not self.pk and UIConfiguration.objects.exists():
+            # if you'll not check for self.pk
+            # then error will also be raised in the update of exists model
+            raise ValidationError(
+                'There can only be one UIConfiguration instance')
+        return super(UIConfiguration, self).save(*args, **kwargs)
+    
+    def get_absolute_url(self):
+        return reverse("uiconfig-detail", kwargs={"pk": self.pk})

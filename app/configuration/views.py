@@ -4,8 +4,9 @@ from django.db.models import Prefetch
 from rest_framework import viewsets
 from rest_framework_guardian import filters
 
-from configuration.models import AdminConfiguration, Configuration
-from configuration.serializers import ConfigurationSerializer
+from configuration.models import AdminConfiguration, Configuration, UIConfiguration
+from configuration.serializers import ConfigurationSerializer, UIConfigurationSerializer
+from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
@@ -29,3 +30,15 @@ class ConfigurationViewSet(viewsets.ReadOnlyModelViewSet):
                          self.request,
                          AdminConfiguration.objects.all(),
                          self)))
+
+class UIConfigurationViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Retrieve UI configuration information
+    """
+    queryset = UIConfiguration.objects.all()
+    serializer_class = UIConfigurationSerializer
+
+    def list(self, request, *args, **kwargs):
+        config = self.get_queryset().first()
+        serializer = self.get_serializer(config)
+        return Response(serializer.data)
