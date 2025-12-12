@@ -292,106 +292,26 @@ class LearningPlanGoalCourseAdmin(GuardedModelAdmin):
     list_filter = ('plan_goal__plan_competency__learning_plan__learner',
                    'modified')
 
+
 @admin.register(Application)
 class ApplicationAdmin(GuardedModelAdmin):
     list_display = ('applicant', 'application_type', 'position', 'status', 'final_submission')
     list_filter = ('application_type', 'position', 'status', 'final_submission')
-    # ordering = ('-modified',)
-    # readonly_fields = ('modified', 'created',)
-    # date_hierarchy = 'modified'
 
-    # fieldsets = (
-    #     (
-    #         "Connections",
-    #         {
-    #             "fields": (
-    #                 "applicant",
-    #                 "application_type",
-    #                 "position",
-    #                 "status",
-    #                 "final_submission",
-    #             )
-    #         }
-    #     ),
-    #     (
-    #         "Meta",
-    #         {
-    #             "classes": ["collapse"],
-    #             "fields": (
-    #                 "modified",
-    #                 "created",
-    #             )
-    #         }
-    #     ),
-    # )
 
 @admin.register(ApplicationCourse)
 class ApplicationCourseAdmin(GuardedModelAdmin):
     list_display = ('application', 'completion_date',)
     list_filter = ('application__applicant',)
-    # ordering = ('-modified',)
-    # readonly_fields = ('modified', 'created',)
-    # date_hierarchy = 'modified'
-    # fieldsets = (
-    #     (
-    #         "Connections",
-    #         {
-    #             "fields": (
-    #                 "application",
-    #                 "course_name",
-    #                 "completion_date",
-    #             )
-    #         }
-    #     ),
-    #     (
-    #         "Meta",
-    #         {
-    #             "classes": ["collapse"],
-    #             "fields": (
-    #                 "modified",
-    #                 "created",
-    #             )
-    #         }
-    #     ),
-    # )
 
 
 @admin.register(ApplicationExperience)
 class ApplicationExperienceAdmin(GuardedModelAdmin):
     list_display = ('application', 'position_name', 'start_date', 'end_date')
     list_filter = ('application__applicant',)
-    # ordering = ('-modified',)
-    # readonly_fields = ('modified', 'created',)
-    # date_hierarchy = 'modified'
-    # fieldsets = (
-    #     (
-    #         "Connections",
-    #         {
-    #             "fields": (
-    #                 "application",
-    #                 "experience_type",
-    #                 "organization",
-    #                 "start_date",
-    #                 "end_date",
-    #             )
-    #         }
-    #     ),
-    #     (
-    #         "Meta",
-    #         {
-    #             "classes": ["collapse"],
-    #             "fields": (
-    #                 "modified",
-    #                 "created",
-    #             )
-    #         }
-    #     ),
-    # )
 
 
 @admin.register(ApplicationComment)
 class ApplicationCommentAdmin(GuardedModelAdmin):
     list_display = ('application', 'reviewer')
     list_filter = ('application__applicant',)
-    # readonly_fields = ('modified', 'created',)
-    # date_hierarchy = 'created'
