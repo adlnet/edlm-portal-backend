@@ -5,7 +5,7 @@ from api.models import (CandidateList, CandidateRanking, LearningPlan,
                         LearningPlanCompetency, LearningPlanGoal,
                         LearningPlanGoalCourse, LearningPlanGoalKsa,
                         ProfileAnswer, ProfileQuestion,
-                        ProfileResponse, TrainingPlan)
+                        ProfileResponse, TrainingPlan, Application)
 from configuration.models import Configuration
 from external.models import Competency, Course, Job, Ksa
 from users.models import User
@@ -171,6 +171,23 @@ class TestSetUp(APITestCase):
         self.learning_plan_goal_course = LearningPlanGoalCourse(
             plan_goal=self.learning_plan_goal,
             xds_course=self.course
+        )
+
+        # Application
+        applicant = self.basic_user
+        app_first_name = "John"
+        app_last_name = "Doe"
+        code_of_ethics_acknowledgement = True
+        app_status = Application.StatusChoices.DRAFT
+        application_type = Application.ApplicationChoices.NEW
+
+        self.application = Application(
+            applicant=applicant,
+            first_name=app_first_name,
+            last_name=app_last_name,
+            code_of_ethics_acknowledgement=code_of_ethics_acknowledgement,
+            status=app_status,
+            application_type=application_type,
         )
 
         # Configuration

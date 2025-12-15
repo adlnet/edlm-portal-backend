@@ -364,7 +364,9 @@ class Application(TimeStampedModel):
         help_text='Position being applied for: SAPR VA or SARC / SAPR PM'
     )
     status = models.CharField(
-        max_length=50, blank=True, choices=(StatusChoices.choices), default=(StatusChoices.DRAFT),
+        max_length=50, blank=True,
+        choices=(StatusChoices.choices),
+        default=(StatusChoices.DRAFT),
         help_text='Current status of the application'
     )
     policy = models.CharField(
@@ -429,7 +431,7 @@ class Application(TimeStampedModel):
     # Contact Information
     work_email = models.EmailField(blank=True)
     has_mil_gov_work_email = models.BooleanField(
-        default=False, 
+        default=False,
         help_text='Indicates if user has military/government work email'
     )
     other_sarc_email = models.EmailField(
@@ -534,7 +536,8 @@ class Application(TimeStampedModel):
         verbose_name_plural = 'Applications'
 
     def __str__(self):
-        return f'{self.application_type} - {self.first_name} {self.last_name} ({self.status})'
+        return f'{self.application_type} - {self.first_name}' \
+               f' {self.last_name} ({self.status})'
 
 
 class ApplicationComment(TimeStampedModel):
@@ -566,7 +569,8 @@ class ApplicationComment(TimeStampedModel):
         self.application.save(update_fields=['modified',])
 
     def __str__(self):
-        return f'Comment by {self.reviewer} on Application {self.application.id}'
+        return f'Comment by {self.reviewer} on '\
+               f'Application {self.application.id}'
 
 
 class ApplicationExperience(TimeStampedModel):
@@ -622,7 +626,6 @@ class ApplicationExperience(TimeStampedModel):
 
     # file class later to hold to be created proof_file
 
-
     class Meta:
         verbose_name = 'Application Experience'
         verbose_name_plural = 'Application Experiences'
@@ -655,7 +658,7 @@ class ApplicationCourse(TimeStampedModel):
         ]
     )
     xds_course = models.ForeignKey(
-        Course, on_delete=models.CASCADE, related_name='application_courses', 
+        Course, on_delete=models.CASCADE, related_name='application_courses',
         null=True
     )
     completion_date = models.DateField(
@@ -681,4 +684,5 @@ class ApplicationCourse(TimeStampedModel):
         self.application.save(update_fields=['modified',])
 
     def __str__(self):
-        return f'Course {self.xds_course_id or self.category} for Application {self.application.id}'
+        return f'Course {self.xds_course_id or self.category}' \
+               f' for Application {self.application.id}'

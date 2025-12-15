@@ -1,3 +1,5 @@
+from datetime import date, datetime
+
 from django.core.exceptions import ValidationError
 from django.test import tag
 
@@ -5,7 +7,8 @@ from api.models import (CandidateList, CandidateRanking, LearningPlan,
                         LearningPlanCompetency, LearningPlanGoal,
                         LearningPlanGoalCourse, LearningPlanGoalKsa,
                         ProfileAnswer, ProfileQuestion,
-                        ProfileResponse)
+                        ProfileResponse, Application, ApplicationComment,
+                        ApplicationCourse, ApplicationExperience)
 
 from .test_setup import TestSetUp
 
@@ -516,3 +519,150 @@ class ModelTests(TestSetUp):
         self.assertEqual(self.learning_plan_goal.courses.count(), 1)
         self.assertEqual(self.course.xds_courses.count(), 1)
         self.assertIn(str(lpgc.pk), lpgc.get_absolute_url())
+
+    def test_application(self):
+        """Test that creating an Application is successful"""
+
+        app = Application.objects.create(
+            applicant=self.auth_user,
+            code_of_ethics_acknowledgement=True,
+            application_type=Application.ApplicationChoices.NEW,
+            position=Application.PositionChoices.SAPR_VA,
+            status=Application.StatusChoices.DRAFT,
+            policy='test-policy',
+            application_version=2,
+            first_name='John',
+            last_name='Smith',
+            middle_initial='Q',
+            affiliation='Army',
+            mili_status='Active',
+            rank='Captain',
+            grade='O-3',
+            command_unit='Unit A',
+            installation='Base X',
+            work_email='john.smith@army.mil',
+            has_mil_gov_work_email=True,
+            other_sarc_email='other.sarc@army.mil',
+            dsn_code='12345',
+            work_phone='555-0101',
+            work_phone_ext='123',
+            certification_awarded_date=date(2023, 1, 1),
+            certification_expiration_date=date(2025, 1, 1),
+            no_experience_needed=True,
+            supervisor_first_name='Sue',
+            supervisor_last_name='Officer',
+            supervisor_email='sue.officer@army.mil',
+            sarc_first_name='Mary',
+            sarc_last_name='Sarc',
+            sarc_email='mary.sarc@army.mil',
+            commanding_officer_first_name='Carl',
+            commanding_officer_last_name='Commander',
+            commanding_officer_email='carl.commander@army.mil',
+            co_same_as_supervisor=True,
+            final_submission=True,
+            final_submission_stamp=datetime(2025, 1, 2, 10, 30),
+        )
+        # Check field values
+        self.assertEqual(app.applicant, self.auth_user)
+        self.assertTrue(app.code_of_ethics_acknowledgement)
+        self.assertEqual(app.application_type,
+                         Application.ApplicationChoices.NEW)
+        self.assertEqual(app.position, Application.PositionChoices.SAPR_VA)
+        self.assertEqual(app.status, Application.StatusChoices.DRAFT)
+        self.assertEqual(app.policy, 'test-policy')
+        self.assertEqual(app.application_version, 2)
+        self.assertEqual(app.first_name, 'John')
+        self.assertEqual(app.last_name, 'Smith')
+
+        # Test the __str__ method
+        self.assertEqual(
+            str(app),
+            f'{Application.ApplicationChoices.NEW} - John Smith '
+            f'({Application.StatusChoices.DRAFT})'
+        )
+
+    def test_application_experience(self):
+        """Test that creating an ApplicationExperience is successful"""
+
+        app_exp = ApplicationExperience.objects.create(
+            application=self.application,
+            display_order=1,
+            position_name='Software Engineer',
+            start_date=date(2020, 1, 1),
+            end_date=date(2022, 12, 31),
+            advocacy_hours=2000,
+            marked_for_evaluation=True,
+            supervisor_last_name="Super",
+            supervisor_first_name="Steven",
+            supervisor_email="steven.super@example.com",
+            supervisor_not_available=False,
+        )
+
+        # Check field values
+        self.assertEqual(app_exp.application, self.application)
+        self.assertEqual(app_exp.position_name, 'Software Engineer')
+        self.assertEqual(app_exp.start_date, date(2020, 1, 1))
+        self.assertEqual(app_exp.end_date, date(2022, 12, 31))
+        self.assertEqual(app_exp.advocacy_hours, 2000)
+        self.assertTrue(app_exp.marked_for_evaluation)
+        self.assertEqual(app_exp.supervisor_last_name, "Super")
+        self.assertEqual(app_exp.supervisor_first_name, "Steven")
+        self.assertEqual(app_exp.supervisor_email, "steven.super@example.com")
+        self.assertFalse(app_exp.supervisor_not_available)
+
+        # Test the __str__ method
+        self.assertEqual(
+            str(app_exp),
+            'Software Engineer for Application ' + str(self.application.id)
+        )
+
+    def test_application_course(self):
+        """Test that creating an ApplicationCourse is successful"""
+
+        self.course.save()
+
+        app_course = ApplicationCourse.objects.create(
+            application=self.application,
+            display_order=1,
+            category='Cybersecurity',
+            xds_course=self.course,
+            completion_date=date(2021, 6, 15),
+            clocked_hours=40,
+        )
+
+        # Check field values
+        self.assertEqual(app_course.application, self.application)
+        self.assertEqual(app_course.display_order, 1)
+        self.assertEqual(app_course.category, 'Cybersecurity')
+        self.assertEqual(app_course.xds_course, self.course)
+        self.assertEqual(app_course.completion_date, date(2021, 6, 15))
+        self.assertEqual(app_course.clocked_hours, 40)
+
+        # Test the __str__ method
+        self.assertEqual(
+            str(app_course),
+            'Course abcdefg12345 for Application ' + str(self.application.id)
+        )
+
+    def test_application_comment(self):
+        """Test that creating an ApplicationComment is successful"""
+
+        comment_text = "This is a test comment."
+
+        app_comment = ApplicationComment.objects.create(
+            application=self.application,
+            reviewer=self.auth_user,
+            comment=comment_text,
+        )
+
+        # Check field values
+        self.assertEqual(app_comment.application, self.application)
+        self.assertEqual(app_comment.reviewer, self.auth_user)
+        self.assertEqual(app_comment.comment, comment_text)
+
+        # Test the __str__ method
+        self.assertEqual(
+            str(app_comment),
+            f'Comment by {self.auth_user.username} on '
+            f'Application ' + f'{self.application.id}'
+        )
