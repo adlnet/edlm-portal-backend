@@ -1,3 +1,5 @@
+import uuid
+
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import RegexValidator
 from django.db import models
@@ -313,28 +315,32 @@ class LearningPlanGoalCourse(TimeStampedModel):
 
 
 # SAPRO Application Models section
-class Application(models.Model):
+class Application(TimeStampedModel):
     """
     Main application model for SAPR certification applications.
     Supports both NEW and RENEWAL application types.
     """
-    APPLICATION_TYPE_CHOICES = [
-        ('NEW', 'New Application'),
-        ('RENEWAL', 'Renewal Application'),
-    ]
 
-    POSITION_CHOICES = [
-        ('SAPR_VA', 'SAPR VA (Victim Advocate)'),
-        ('SARC/SAPR_PM', 'SARC / SAPR PM'),
-    ]
+    class ApplicationChoices(models.TextChoices):
+        NEW = 'new', 'New Application'
+        RENEWAL = 'renewal', 'Renewal Application'
 
-    STATUS_CHOICES = [
-        ('draft', 'Draft'),
-        ('submitted', 'Submitted'),
-        ('under_review', 'Under Review'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-    ]
+    class PositionChoices(models.TextChoices):
+        SAPR_VA = 'SAPR_VA', 'SAPR VA (Victim Advocate)'
+        SARC_SAPR_PM = 'SARC/SAPR_PM', 'SARC / SAPR PM'
+
+    class StatusChoices(models.TextChoices):
+        DRAFT = 'draft', 'Draft'
+        SUBMITTED = 'submitted', 'Submitted'
+        UNDER_REVIEW = 'under_review', 'Under Review'
+        APPROVED = 'approved', 'Approved'
+        REJECTED = 'rejected', 'Rejected'
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
 
     # Foreign Key
     applicant = models.ForeignKey(
@@ -350,15 +356,15 @@ class Application(models.Model):
 
     # Application Information
     application_type = models.CharField(
-        max_length=20, blank=True, choices=APPLICATION_TYPE_CHOICES, 
+        max_length=20, blank=True, choices=(ApplicationChoices.choices),
         help_text='Type of application: New or Renewal'
     )
     position = models.CharField(
-        max_length=20, blank=True, choices=POSITION_CHOICES,
+        max_length=20, blank=True, choices=(PositionChoices.choices),
         help_text='Position being applied for: SAPR VA or SARC / SAPR PM'
     )
     status = models.CharField(
-        max_length=50, blank=True, choices=STATUS_CHOICES, default='draft',
+        max_length=50, blank=True, choices=(StatusChoices.choices), default=(StatusChoices.DRAFT),
         help_text='Current status of the application'
     )
     policy = models.CharField(
@@ -448,10 +454,9 @@ class Application(models.Model):
     )
 
     # Certification Information
-    certificate_file = models.FileField(
-        upload_to='applications/certificates/', null=True, blank=True,
-        help_text='Upload certification file'
-    )
+
+    # file class to be created later to hold certification_file
+
     certification_awarded_date = models.DateField(
         null=True, blank=True,
         help_text='Date when certification was awarded'
@@ -525,19 +530,14 @@ class Application(models.Model):
     )
 
     class Meta:
-        ordering = ['-id']
         verbose_name = 'Application'
         verbose_name_plural = 'Applications'
-
-    # def save(self, *args, **kwargs):
-    #     super().save(*args, **kwargs)
-    #     self.applicant.save(update_fields=['modified',])
 
     def __str__(self):
         return f'{self.application_type} - {self.first_name} {self.last_name} ({self.status})'
 
 
-class ApplicationComment(models.Model):
+class ApplicationComment(TimeStampedModel):
     """
     Comments/feedback on applications from reviewers.
     """
@@ -556,23 +556,20 @@ class ApplicationComment(models.Model):
         ],
         help_text='Comment text'
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-created_at']
         verbose_name = 'Application Comment'
         verbose_name_plural = 'Application Comments'
 
-    # def save(self, *args, **kwargs):
-    #     super().save(*args, **kwargs)
-    #     self.application.save(update_fields=['modified',])
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.application.save(update_fields=['modified',])
 
     def __str__(self):
         return f'Comment by {self.reviewer} on Application {self.application.id}'
 
 
-class ApplicationExperience(models.Model):
+class ApplicationExperience(TimeStampedModel):
     """
     Work experience records associated with an application.
     """
@@ -622,25 +619,23 @@ class ApplicationExperience(models.Model):
     )
 
     # Proof/Documentation
-    proof_file = models.FileField(
-        upload_to='applications/experience_proofs/', blank=True, null=True,
-        help_text='Upload proof of experience document'
-    )
+
+    # file class later to hold to be created proof_file
+
 
     class Meta:
-        ordering = ['display_order', '-start_date']
         verbose_name = 'Application Experience'
         verbose_name_plural = 'Application Experiences'
-    
-    # def save(self, *args, **kwargs):
-    #     super().save(*args, **kwargs)
-    #     self.application.save(update_fields=['modified',])
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.application.save(update_fields=['modified',])
 
     def __str__(self):
         return f'{self.position_name} for Application {self.application.id}'
 
 
-class ApplicationCourse(models.Model):
+class ApplicationCourse(TimeStampedModel):
     """
     Training courses completed as part of an application.
     """
@@ -659,12 +654,9 @@ class ApplicationCourse(models.Model):
             RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
         ]
     )
-    xds_course_id = models.CharField(
-        max_length=255, blank=True, verbose_name='XDS Course ID',
-        help_text='Reference ID to external course table (XDS system)',
-        validators=[
-            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
-        ]
+    xds_course = models.ForeignKey(
+        Course, on_delete=models.CASCADE, related_name='application_courses', 
+        null=True
     )
     completion_date = models.DateField(
         help_text='Date when the course was completed', blank=True
@@ -674,14 +666,19 @@ class ApplicationCourse(models.Model):
         help_text='Number of hours for this course'
     )
 
+    # Return the name of the course
+    @property
+    def course_name(self):
+        return self.xds_course.name
+
     class Meta:
-        ordering = ['display_order', '-completion_date']
+        ordering = ['-completion_date']
         verbose_name = 'Application Course'
         verbose_name_plural = 'Application Courses'
 
-    # def save(self, *args, **kwargs):
-    #     super().save(*args, **kwargs)
-    #     self.application.save(update_fields=['modified',])
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.application.save(update_fields=['modified',])
 
     def __str__(self):
         return f'Course {self.xds_course_id or self.category} for Application {self.application.id}'
