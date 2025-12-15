@@ -1,13 +1,17 @@
 from django.contrib import admin
 from guardian.admin import GuardedModelAdmin
 
-from configuration.models import AdminConfiguration, Configuration, UIConfiguration
+from configuration.models import (AdminConfiguration,
+                                  Configuration,
+                                  UIConfiguration)
 
 # Register your models here.
 
+
 @admin.register(UIConfiguration)
 class UIConfigurationAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'logo', 'portal_name','welcome_message',)
+    list_display = ('pk', 'logo', 'portal_name', 'welcome_message',)
+
 
 @admin.register(Configuration)
 class ConfigurationAdmin(admin.ModelAdmin):

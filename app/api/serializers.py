@@ -8,8 +8,9 @@ from rest_framework_guardian.serializers import \
 
 from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
                         ProfileQuestion, ProfileResponse, TrainingPlan,
-                        LearningPlan, LearningPlanCompetency, LearningPlanGoal,
-                        LearningPlanGoalCourse, LearningPlanGoalKsa)
+                        LearningPlan, LearningPlanCompetency,
+                        LearningPlanGoal, LearningPlanGoalCourse,
+                        LearningPlanGoalKsa)
 from configuration.utils.portal_utils import confusable_homoglyphs_check
 from external.models import Competency, Course, Job, Ksa
 from external.utils.eccr_utils import validate_eccr_item

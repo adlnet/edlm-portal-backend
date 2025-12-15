@@ -114,6 +114,7 @@ class AdminConfiguration(models.Model):
     config = models.ForeignKey(
         Configuration, on_delete=models.CASCADE, related_name='admins')
 
+
 class UIConfiguration(models.Model):
     logo = models.ImageField(
         upload_to='logos/',
@@ -139,6 +140,6 @@ class UIConfiguration(models.Model):
             raise ValidationError(
                 'There can only be one UIConfiguration instance')
         return super(UIConfiguration, self).save(*args, **kwargs)
-    
+
     def get_absolute_url(self):
         return reverse("uiconfig-detail", kwargs={"pk": self.pk})
