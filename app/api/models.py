@@ -1,7 +1,7 @@
 import uuid
 
 from django.contrib.postgres.fields import ArrayField
-from django.core.validators import RegexValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.urls import reverse
 from model_utils import Choices
@@ -333,6 +333,8 @@ class Application(TimeStampedModel):
         DRAFT = 'draft', 'Draft'
         SUBMITTED = 'submitted', 'Submitted'
         UNDER_REVIEW = 'under_review', 'Under Review'
+        ADDITIONAL_INFO_NEEDED = ('additional_info_needed',
+                                  'Additional Information Needed')
         APPROVED = 'approved', 'Approved'
         REJECTED = 'rejected', 'Rejected'
 
@@ -598,6 +600,9 @@ class ApplicationExperience(TimeStampedModel):
     )
     advocacy_hours = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00,
+        validators=[
+            MinValueValidator(0.00, message='Hours cannot be negative'),
+        ],
         help_text='Number of advocacy hours accumulated'
     )
     marked_for_evaluation = models.BooleanField(
@@ -666,6 +671,9 @@ class ApplicationCourse(TimeStampedModel):
     )
     clocked_hours = models.DecimalField(
         max_digits=6, decimal_places=2, default=0.00, blank=True,
+        validators=[
+            MinValueValidator(0.00, message='Hours cannot be negative'),
+        ],
         help_text='Number of hours for this course'
     )
 
