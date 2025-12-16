@@ -544,12 +544,20 @@ class ApplicationComment(TimeStampedModel):
     """
     Comments/feedback on applications from reviewers.
     """
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
     application = models.ForeignKey(
         Application, on_delete=models.CASCADE, related_name='comments',
         help_text='The application this comment belongs to'
     )
     reviewer = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='application_comments',
+        User, on_delete=models.SET_NULL, null=True,
+        related_name='application_comments',
         help_text='The user who wrote this comment'
     )
     comment = models.TextField(
@@ -577,6 +585,12 @@ class ApplicationExperience(TimeStampedModel):
     """
     Work experience records associated with an application.
     """
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
     application = models.ForeignKey(
         Application, on_delete=models.CASCADE, related_name='experiences',
         help_text='The application this experience belongs to'
@@ -642,6 +656,12 @@ class ApplicationCourse(TimeStampedModel):
     """
     Training courses completed as part of an application.
     """
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
     application = models.ForeignKey(
         Application, on_delete=models.CASCADE, related_name='courses',
         help_text='The application this course belongs to'
