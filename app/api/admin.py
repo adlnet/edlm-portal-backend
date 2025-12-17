@@ -5,7 +5,9 @@ from guardian.admin import GuardedModelAdmin
 from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
                         ProfileQuestion, ProfileResponse, TrainingPlan,
                         LearningPlan, LearningPlanCompetency, LearningPlanGoal,
-                        LearningPlanGoalCourse, LearningPlanGoalKsa)
+                        LearningPlanGoalCourse, LearningPlanGoalKsa,
+                        Application, ApplicationCourse,
+                        ApplicationComment, ApplicationExperience)
 
 
 # Register your models here.
@@ -289,3 +291,30 @@ class LearningPlanGoalCourseAdmin(GuardedModelAdmin):
     list_display = ('course_name', 'plan_goal', 'modified')
     list_filter = ('plan_goal__plan_competency__learning_plan__learner',
                    'modified')
+
+
+@admin.register(Application)
+class ApplicationAdmin(GuardedModelAdmin):
+    list_display = ('applicant', 'application_type', 'position',
+                    'status', 'final_submission')
+    list_filter = ('application_type', 'position', 'status',
+                   'final_submission')
+
+
+@admin.register(ApplicationCourse)
+class ApplicationCourseAdmin(GuardedModelAdmin):
+    list_display = ('application', 'completion_date',)
+    list_filter = ('application__applicant',)
+
+
+@admin.register(ApplicationExperience)
+class ApplicationExperienceAdmin(GuardedModelAdmin):
+    list_display = ('application', 'position_name', 'start_date',
+                    'end_date')
+    list_filter = ('application__applicant',)
+
+
+@admin.register(ApplicationComment)
+class ApplicationCommentAdmin(GuardedModelAdmin):
+    list_display = ('application', 'reviewer')
+    list_filter = ('application__applicant',)

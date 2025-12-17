@@ -2,14 +2,16 @@ import logging
 
 from django.db.models import Prefetch
 from rest_framework import viewsets
+from rest_framework.response import Response
 from rest_framework_guardian import filters
 
-from configuration.models import AdminConfiguration, Configuration, UIConfiguration
-from configuration.serializers import ConfigurationSerializer, UIConfigurationSerializer
-from rest_framework.response import Response
+from configuration.models import (AdminConfiguration,
+                                  Configuration,
+                                  UIConfiguration)
+from configuration.serializers import (ConfigurationSerializer,
+                                       UIConfigurationSerializer)
 
 logger = logging.getLogger(__name__)
-
 
 # Create your views here.
 
@@ -30,6 +32,7 @@ class ConfigurationViewSet(viewsets.ReadOnlyModelViewSet):
                          self.request,
                          AdminConfiguration.objects.all(),
                          self)))
+
 
 class UIConfigurationViewSet(viewsets.ReadOnlyModelViewSet):
     """

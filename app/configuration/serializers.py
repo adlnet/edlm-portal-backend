@@ -2,7 +2,8 @@ import logging
 
 from rest_framework import serializers
 
-from configuration.models import AdminConfiguration, Configuration, UIConfiguration
+from configuration.models import (AdminConfiguration, Configuration,
+                                  UIConfiguration)
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ class ConfigurationSerializer(serializers.ModelSerializer):
         if manager_groups.intersection(user_groups).exists():
             d['manager'] = True
         return d
+
 
 class UIConfigurationSerializer(serializers.ModelSerializer):
     class Meta:

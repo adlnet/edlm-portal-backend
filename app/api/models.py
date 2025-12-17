@@ -1,3 +1,5 @@
+import uuid
+
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import RegexValidator
 from django.db import models
@@ -310,3 +312,397 @@ class LearningPlanGoalCourse(TimeStampedModel):
     def get_absolute_url(self):
         return reverse("api:learning-plan-goal-courses-detail",
                        kwargs={"pk": self.pk})
+
+
+# SAPRO Application Models section
+class Application(TimeStampedModel):
+    """
+    Main application model for SAPR certification applications.
+    Supports both NEW and RENEWAL application types.
+    """
+
+    class ApplicationChoices(models.TextChoices):
+        NEW = 'new', 'New Application'
+        RENEWAL = 'renewal', 'Renewal Application'
+
+    class PositionChoices(models.TextChoices):
+        SAPR_VA = 'SAPR_VA', 'SAPR VA (Victim Advocate)'
+        SARC_SAPR_PM = 'SARC/SAPR_PM', 'SARC / SAPR PM'
+
+    class StatusChoices(models.TextChoices):
+        DRAFT = 'draft', 'Draft'
+        SUBMITTED = 'submitted', 'Submitted'
+        UNDER_REVIEW = 'under_review', 'Under Review'
+        APPROVED = 'approved', 'Approved'
+        REJECTED = 'rejected', 'Rejected'
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
+    # Foreign Key
+    applicant = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='applications',
+        help_text='The user whom this application is for'
+    )
+
+    # Ethics Acknowledgement
+    code_of_ethics_acknowledgement = models.BooleanField(
+        verbose_name='Code of Ethics Acknowledgement',
+        help_text='Applicant acknowledges code of ethics'
+    )
+
+    # Application Information
+    application_type = models.CharField(
+        max_length=20, blank=True, choices=(ApplicationChoices.choices),
+        help_text='Type of application: New or Renewal'
+    )
+    position = models.CharField(
+        max_length=20, blank=True, choices=(PositionChoices.choices),
+        help_text='Position being applied for: SAPR VA or SARC / SAPR PM'
+    )
+    status = models.CharField(
+        max_length=50, blank=True,
+        choices=(StatusChoices.choices),
+        default=(StatusChoices.DRAFT),
+        help_text='Current status of the application'
+    )
+    policy = models.CharField(
+        max_length=100, blank=True, default='dod-xxxx',
+        help_text='Policy reference number'
+    )
+    application_version = models.IntegerField(
+        default=1, blank=True,
+        help_text='Version number of the application'
+    )
+
+    # Personal Information
+    first_name = models.CharField(
+        max_length=255, blank=True, validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    last_name = models.CharField(
+        max_length=255, blank=True, validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    middle_initial = models.CharField(
+        max_length=1, blank=True, validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+
+    # Military/Affiliation Information
+    affiliation = models.CharField(
+        max_length=255, blank=True, validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    mili_status = models.CharField(
+        max_length=100, blank=True, verbose_name='Military Status',
+        validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    rank = models.CharField(
+        max_length=50, blank=True, validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    grade = models.CharField(
+        max_length=50, blank=True, validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    command_unit = models.CharField(
+        max_length=255, blank=True, validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    installation = models.CharField(
+        max_length=255, blank=True, validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+
+    # Contact Information
+    work_email = models.EmailField(blank=True)
+    has_mil_gov_work_email = models.BooleanField(
+        default=False,
+        help_text='Indicates if user has military/government work email'
+    )
+    other_sarc_email = models.EmailField(
+        blank=True, verbose_name='Other Email'
+    )
+    dsn_code = models.CharField(
+        max_length=20, blank=True, verbose_name='DSN Code',
+        validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    work_phone = models.CharField(
+        max_length=20, blank=True, validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    work_phone_ext = models.CharField(
+        max_length=10, blank=True, verbose_name='Work Phone Extension',
+        validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+
+    # Certification Information
+
+    # file class to be created later to hold certification_file
+
+    certification_awarded_date = models.DateField(
+        null=True, blank=True,
+        help_text='Date when certification was awarded'
+    )
+    certification_expiration_date = models.DateField(
+        null=True, blank=True,
+        help_text='Date when certification expires'
+    )
+    no_experience_needed = models.BooleanField(
+        default=False, blank=True,
+        help_text='Check if no experience is needed for this application'
+    )
+
+    # Supervisor Information
+    supervisor_last_name = models.CharField(
+        max_length=255, blank=True, validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    supervisor_first_name = models.CharField(
+        max_length=255, blank=True, validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    supervisor_email = models.EmailField(blank=True)
+
+    # SARC Information
+    sarc_last_name = models.CharField(
+        max_length=255, blank=True, verbose_name='SARC Last Name',
+        validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    sarc_first_name = models.CharField(
+        max_length=255, blank=True, verbose_name='SARC First Name',
+        validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    sarc_email = models.EmailField(blank=True, verbose_name='SARC Email')
+
+    # Commanding Officer Information
+    commanding_officer_last_name = models.CharField(
+        max_length=255, blank=True, verbose_name='CO Last Name',
+        validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    commanding_officer_first_name = models.CharField(
+        max_length=255, blank=True, verbose_name='CO First Name',
+        validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    commanding_officer_email = models.EmailField(
+        blank=True, verbose_name='CO Email'
+    )
+    co_same_as_supervisor = models.BooleanField(
+        default=False, verbose_name='CO same as Supervisor',
+        help_text='Check if commanding officer is the same as supervisor'
+    )
+
+    # Submission Information
+    final_submission = models.BooleanField(
+        default=False, blank=True,
+        help_text='Indicates the application has been submitted'
+    )
+    final_submission_stamp = models.DateTimeField(
+        blank=True, null=True,
+        help_text='Timestamp of final submission'
+    )
+
+    class Meta:
+        verbose_name = 'Application'
+        verbose_name_plural = 'Applications'
+
+    def __str__(self):
+        return f'{self.application_type} - {self.first_name}' \
+               f' {self.last_name} ({self.status})'
+
+
+class ApplicationComment(TimeStampedModel):
+    """
+    Comments/feedback on applications from reviewers.
+    """
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
+    application = models.ForeignKey(
+        Application, on_delete=models.CASCADE, related_name='comments',
+        help_text='The application this comment belongs to'
+    )
+    reviewer = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True,
+        related_name='application_comments',
+        help_text='The user who wrote this comment'
+    )
+    comment = models.TextField(
+        blank=True,
+        validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ],
+        help_text='Comment text'
+    )
+
+    class Meta:
+        verbose_name = 'Application Comment'
+        verbose_name_plural = 'Application Comments'
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.application.save(update_fields=['modified',])
+
+    def __str__(self):
+        return f'Comment by {self.reviewer} on '\
+               f'Application {self.application.id}'
+
+
+class ApplicationExperience(TimeStampedModel):
+    """
+    Work experience records associated with an application.
+    """
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
+    application = models.ForeignKey(
+        Application, on_delete=models.CASCADE, related_name='experiences',
+        help_text='The application this experience belongs to'
+    )
+    display_order = models.IntegerField(
+        default=0,
+        help_text='Order in which to display this experience'
+    )
+    position_name = models.CharField(
+        max_length=255, validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ],
+        help_text='Title/name of the position'
+    )
+    start_date = models.DateField(help_text='Start date of experience')
+    end_date = models.DateField(
+        blank=True, null=True,
+        help_text='End date of experience (blank if ongoing)'
+    )
+    advocacy_hours = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00,
+        help_text='Number of advocacy hours accumulated'
+    )
+    marked_for_evaluation = models.BooleanField(
+        default=False,
+        help_text='Flag indicating if this experience should be evaluated'
+    )
+
+    # Supervisor Information for this experience
+    supervisor_last_name = models.CharField(
+        max_length=255, blank=True, validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    supervisor_first_name = models.CharField(
+        max_length=255, blank=True, validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    supervisor_email = models.EmailField(blank=True)
+    supervisor_not_available = models.BooleanField(
+        default=False, verbose_name='Supervisor Not Available',
+        help_text='Check if supervisor is not available for verification'
+    )
+
+    # Proof/Documentation
+
+    # file class later to hold to be created proof_file
+
+    class Meta:
+        verbose_name = 'Application Experience'
+        verbose_name_plural = 'Application Experiences'
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.application.save(update_fields=['modified',])
+
+    def __str__(self):
+        return f'{self.position_name} for Application {self.application.id}'
+
+
+class ApplicationCourse(TimeStampedModel):
+    """
+    Training courses completed as part of an application.
+    """
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
+    application = models.ForeignKey(
+        Application, on_delete=models.CASCADE, related_name='courses',
+        help_text='The application this course belongs to'
+    )
+    display_order = models.IntegerField(
+        default=0,
+        help_text='Order in which to display this course'
+    )
+    category = models.CharField(
+        max_length=255, blank=True,
+        help_text='Category or competency area (e.g., competency)',
+        validators=[
+            RegexValidator(regex=REGEX_CHECK, message=REGEX_ERROR_MESSAGE),
+        ]
+    )
+    xds_course = models.ForeignKey(
+        Course, on_delete=models.CASCADE, related_name='application_courses',
+        null=True
+    )
+    completion_date = models.DateField(
+        help_text='Date when the course was completed', blank=True
+    )
+    clocked_hours = models.DecimalField(
+        max_digits=6, decimal_places=2, default=0.00, blank=True,
+        help_text='Number of hours for this course'
+    )
+
+    # Return the name of the course
+    @property
+    def course_name(self):
+        return self.xds_course.name
+
+    class Meta:
+        ordering = ['-completion_date']
+        verbose_name = 'Application Course'
+        verbose_name_plural = 'Application Courses'
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.application.save(update_fields=['modified',])
+
+    def __str__(self):
+        return f'Course {self.xds_course_id or self.category}' \
+               f' for Application {self.application.id}'
