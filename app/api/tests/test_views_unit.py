@@ -18,6 +18,10 @@ API_LEARNING_PLAN_COMPETENCIES_DETAIL = 'api:learning-plan-competencies-detail'
 API_LEARNING_PLAN_GOALS_DETAIL = 'api:learning-plan-goals-detail'
 API_LEARNING_PLAN_GOAL_KSAS_DETAIL = 'api:learning-plan-goal-ksas-detail'
 API_LEARNING_PLAN_GOAL_COURSES_DETAIL = 'api:learning-plan-goal-courses-detail'
+API_APPLICATIONS_DETAIL = 'api:applications-detail'
+API_APPLICATION_EXPERIENCES_DETAIL = 'api:application-experiences-detail'
+API_APPLICATION_COURSES_DETAIL = 'api:application-courses-detail'
+API_APPLICATION_COMMENTS_DETAIL = 'api:application-comments-detail'
 EXPECTED_ERROR = "Authentication credentials were not provided."
 
 
@@ -806,6 +810,285 @@ class ViewTests(TestSetUp):
         response = self.client.delete(url)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+
+@tag('unit')
+class ApplicationViewTests(TestSetUp):
+
+    def test_application_requests_no_auth(self):
+        """Test that making a get request to the application api with no
+        auth returns an error"""
+        url = reverse(API_APPLICATIONS_DETAIL, kwargs={'pk': 1})
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = EXPECTED_ERROR
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(responseDict['detail'], expected_error)
+
+    def test_application_requests_bad_id(self):
+        """Test that making a get request to the application api with a
+        bad id returns an error"""
+        url = reverse(API_APPLICATIONS_DETAIL, kwargs={'pk': 1})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = "Not found."
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(responseDict['detail'], expected_error)
+
+    def test_application_requests_pass(self):
+        """Test that making a get request to the application api with a
+        correct id returns the application"""
+        self.application.save()
+
+        url = reverse(API_APPLICATIONS_DETAIL,
+                      kwargs={'pk': self.application.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.application.applicant.email,
+                         responseDict['applicant'])
+        self.assertEqual(self.application.first_name,
+                         responseDict['first_name'])
+        self.assertEqual(str(self.application.pk), responseDict['id'])
+        self.assertEqual(self.application.status,
+                         responseDict['status'])
+
+    def test_application_requests_post_draft(self):
+        """Test that making a post request to the application api with
+        valid data creates a draft application"""
+        url = reverse('api:applications-list')
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.post(
+            url, {
+                'application_type': 'new',
+                'position': 'SAPR_VA',
+                'first_name': 'first_name_auth',
+                'last_name': 'last_name_auth',
+                'affiliation': 'army',
+                'mili_status': 'active',
+                'rank': 'E7',
+                'grade': '7',
+                'command_unit': 'Delta Company',
+                'installation': 'Fort Liberty',
+                'work_email': 'ester@army.mil',
+                'has_mil_gov_work_email': True,
+                'supervisor_last_name': 'Chen',
+                'supervisor_first_name': 'Johnny',
+                'supervisor_email': 'johnny.tester@army.mil',
+                'sarc_last_name': 'Ket',
+                'sarc_first_name': 'Ash',
+                'sarc_email': 'ash.ket@army.mil',
+                'code_of_ethics_acknowledgement': True,
+                'final_submission': False
+            })
+
+        responseDict = json.loads(response.content)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(self.auth_first_name, responseDict['first_name'])
+        self.assertEqual(self.auth_last_name, responseDict['last_name'])
+        self.assertEqual(self.application.status, responseDict['status'])
+        self.assertIsNotNone(responseDict['id'])
+
+    def test_application_requests_patch_final_submission(self):
+        """Test that making a patch request to the application api with
+        valid data creates a submitted application"""
+        self.application.code_of_ethics_acknowledgement = True
+        self.application.save()
+        url = reverse(API_APPLICATIONS_DETAIL,
+                      kwargs={'pk': self.application.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.patch(
+            url, {
+                'final_submission': True,
+            }
+        )
+
+        responseDict = json.loads(response.content)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual('submitted', responseDict['status'])
+        self.assertIsNotNone(responseDict['final_submission_stamp'])
+
+    def test_application_experience_requests_no_auth(self):
+        """Test that making a get request to the application experience api
+        with no auth returns an error"""
+        url = reverse(API_APPLICATION_EXPERIENCES_DETAIL, kwargs={'pk': 1})
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = EXPECTED_ERROR
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(responseDict['detail'], expected_error)
+
+    def test_application_experience_requests_bad_id(self):
+        """Test that making a get request to the application experience api
+        with a bad id returns an error"""
+        url = reverse(API_APPLICATION_EXPERIENCES_DETAIL, kwargs={'pk': 1})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = 'Not found.'
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(responseDict['detail'], expected_error)
+
+    def test_application_experience_requests_pass(self):
+        """Test that making a get request to the application experience api
+        with a correct id returns the application experience"""
+        self.application.save()
+        self.application_experience.save()
+
+        url = reverse(API_APPLICATION_EXPERIENCES_DETAIL,
+                      kwargs={'pk': self.application_experience.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.application_experience.position_name,
+                         responseDict['position_name'])
+        self.assertEqual(str(self.application_experience.advocacy_hours),
+                         responseDict['advocacy_hours'])
+        self.assertEqual(str(self.application_experience.pk),
+                         responseDict['id'])
+
+    def test_application_experience_requests_update_fields(self):
+        """Test that making a patch request to the application experience api
+        with valid data updates the application experience"""
+        self.application.save()
+        self.application_experience.save()
+
+        url = reverse(API_APPLICATION_EXPERIENCES_DETAIL,
+                      kwargs={'pk': self.application_experience.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.patch(
+            url, {
+                'advocacy_hours': '100.25',
+                'supervisor_not_available': True
+            }
+        )
+
+        responseDict = json.loads(response.content)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(True, responseDict['supervisor_not_available'])
+
+    def test_application_course_requests_no_auth(self):
+        """Test that making a get request to the application course api
+        with no auth returns an error"""
+        url = reverse(API_APPLICATION_COURSES_DETAIL, kwargs={'pk': 1})
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = EXPECTED_ERROR
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(responseDict['detail'], expected_error)
+
+    def test_application_course_requests_bad_id(self):
+        """Test that making a get request to the application course api
+        with a bad id returns an error"""
+        url = reverse(API_APPLICATION_COURSES_DETAIL, kwargs={'pk': 1})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = 'Not found.'
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(responseDict['detail'], expected_error)
+
+    def test_application_course_requests_pass(self):
+        """Test that making a get request to the application course api
+        with a correct id returns the application course"""
+        self.course.save()
+        self.application.save()
+        self.application_course.save()
+
+        url = reverse(API_APPLICATION_COURSES_DETAIL,
+                      kwargs={'pk': self.application_course.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.application_course.clocked_hours,
+                         float(responseDict['clocked_hours']))
+        self.assertEqual(str(self.application_course.pk),
+                         responseDict['id'])
+
+    def test_application_comment_requests_no_auth(self):
+        """Test that making a get request to the application comment api
+        with no auth returns an error"""
+        url = reverse(API_APPLICATION_COMMENTS_DETAIL, kwargs={'pk': 1})
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = EXPECTED_ERROR
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(responseDict['detail'], expected_error)
+
+    def test_application_comment_requests_bad_id(self):
+        """Test that making a get request to the application comment api
+        with a bad id returns an error"""
+        url = reverse(API_APPLICATION_COMMENTS_DETAIL, kwargs={'pk': 1})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+        expected_error = 'Not found.'
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(responseDict['detail'], expected_error)
+
+    def test_application_comment_requests_pass(self):
+        """Test that making a get request to the application comment api
+        with a correct id returns the application comment"""
+        self.application.save()
+        self.application_comment.save()
+
+        url = reverse(API_APPLICATION_COMMENTS_DETAIL,
+                      kwargs={'pk': self.application_comment.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.get(url)
+        responseDict = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.application_comment.comment,
+                         responseDict['comment'])
+        self.assertEqual(str(self.application_comment.pk),
+                         responseDict['id'])
+
+    def test_application_comment_requests_update_fields(self):
+        """Test that making a patch request to the application comment api
+        with data updates the application comment"""
+        self.application.save()
+        self.application_comment.save()
+
+        url = reverse(API_APPLICATION_COMMENTS_DETAIL,
+                      kwargs={'pk': self.application_comment.pk})
+        self.client.login(username=self.auth_email,
+                          password=self.auth_password)
+        response = self.client.patch(
+            url, {
+                'comment': 'Updated.'
+            }
+        )
+
+        responseDict = json.loads(response.content)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual('Updated.', responseDict['comment'])
 
 
 @tag("unit")

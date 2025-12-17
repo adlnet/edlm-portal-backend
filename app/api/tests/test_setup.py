@@ -1,11 +1,13 @@
 from django.test import override_settings
 from rest_framework.test import APITestCase
 
-from api.models import (CandidateList, CandidateRanking, LearningPlan,
+from api.models import (Application, ApplicationComment, ApplicationCourse,
+                        ApplicationExperience, CandidateList,
+                        CandidateRanking, LearningPlan,
                         LearningPlanCompetency, LearningPlanGoal,
                         LearningPlanGoalCourse, LearningPlanGoalKsa,
                         ProfileAnswer, ProfileQuestion,
-                        ProfileResponse, TrainingPlan, Application)
+                        ProfileResponse, TrainingPlan)
 from configuration.models import Configuration
 from external.models import Competency, Course, Job, Ksa
 from users.models import User
@@ -174,20 +176,62 @@ class TestSetUp(APITestCase):
         )
 
         # Application
-        applicant = self.basic_user
-        app_first_name = "John"
-        app_last_name = "Doe"
         code_of_ethics_acknowledgement = True
         app_status = Application.StatusChoices.DRAFT
         application_type = Application.ApplicationChoices.NEW
+        position = Application.PositionChoices.SAPR_VA
 
         self.application = Application(
-            applicant=applicant,
-            first_name=app_first_name,
-            last_name=app_last_name,
+            applicant=self.auth_user,
+            first_name=self.auth_first_name,
+            last_name=self.auth_last_name,
             code_of_ethics_acknowledgement=code_of_ethics_acknowledgement,
             status=app_status,
             application_type=application_type,
+            position=position,
+            supervisor_last_name='Chen',
+            supervisor_first_name='Johnny',
+            supervisor_email='johnny.tester@army.mil',
+            sarc_last_name='Ket',
+            sarc_first_name='Ash',
+            sarc_email='ash.ket@army.mil',
+            affiliation='army',
+            mili_status='active_duty',
+            rank='E7',
+            grade='7',
+            command_unit='Delta Company',
+            installation='Fort Liberty',
+            work_email='tester@army.mil',
+            has_mil_gov_work_email=True
+        )
+
+        # Application Experience
+        self.application_experience = ApplicationExperience(
+            application=self.application,
+            position_name='SAPR VA',
+            start_date='2020-09-18',
+            end_date='2021-09-18',
+            advocacy_hours=100.25,
+            marked_for_evaluation=True,
+            supervisor_last_name='Keating',
+            supervisor_first_name='Alan',
+            supervisor_email='alan-keating@army.mil',
+            supervisor_not_available=False
+        )
+
+        # Application Course
+        self.application_course = ApplicationCourse(
+            application=self.application,
+            xds_course=self.course,
+            completion_date='2024-09-18',
+            clocked_hours=100.75
+        )
+
+        # Application Comments
+        self.application_comment = ApplicationComment(
+            application=self.application,
+            reviewer=self.auth_user,
+            comment='Very good application.'
         )
 
         # Configuration
