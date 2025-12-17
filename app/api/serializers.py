@@ -1,14 +1,16 @@
 import logging
 
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from rest_framework_guardian.serializers import \
     ObjectPermissionsAssignmentMixin
 
-from api.models import (CandidateList, CandidateRanking, ProfileAnswer,
-                        ProfileQuestion, ProfileResponse, TrainingPlan,
-                        LearningPlan, LearningPlanCompetency,
+from api.models import (Application, ApplicationComment, ApplicationCourse,
+                        ApplicationExperience, CandidateList, CandidateRanking,
+                        ProfileAnswer, ProfileQuestion, ProfileResponse,
+                        TrainingPlan, LearningPlan, LearningPlanCompetency,
                         LearningPlanGoal, LearningPlanGoalCourse,
                         LearningPlanGoalKsa)
 from configuration.utils.portal_utils import confusable_homoglyphs_check
@@ -33,6 +35,10 @@ XDS_FAILED_ERROR = "Failed to validate XDS item: "
 XDS_EXCEPTION_MSG = "XDS validation failed, please check logs for details"
 PARENT_ID_UPDATE_ERROR = "Cannot change the parent id"
 ELRR_SYNC_ERROR = "Failed to sync with ELRR, please check logs for details"
+EDITABLE_STATUSES = [
+    Application.StatusChoices.DRAFT,
+    Application.StatusChoices.ADDITIONAL_INFO_NEEDED
+]
 
 
 class ProfileAnswerSerializer(serializers.ModelSerializer):
@@ -780,4 +786,367 @@ class LearningPlanSerializer(serializers.ModelSerializer,
     def validate(self, attrs):
         if not confusable_homoglyphs_check(attrs):
             raise serializers.ValidationError(HOMOGLYPH_ERROR)
+        return super().validate(attrs)
+
+
+class ApplicationExperienceSerializer(serializers.ModelSerializer,
+                                      ObjectPermissionsAssignmentMixin):
+    application = serializers.PrimaryKeyRelatedField(
+        queryset=Application.objects.all())
+
+    class Meta:
+        model = ApplicationExperience
+        fields = ['id', 'application', 'display_order', 'position_name',
+                  'start_date', 'end_date', 'advocacy_hours',
+                  'marked_for_evaluation', 'supervisor_last_name',
+                  'supervisor_first_name', 'supervisor_email',
+                  'supervisor_not_available', 'modified', 'created',]
+        extra_kwargs = {'modified': {'read_only': True},
+                        'created': {'read_only': True}}
+
+    def update(self, instance, validated_data):
+        if 'application' in validated_data:
+            new_app = validated_data['application']
+            if instance.application != new_app:
+                raise serializers.ValidationError(
+                    PARENT_ID_UPDATE_ERROR
+                )
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
+
+    def get_permissions_map(self, created):
+        perms = {}
+        if not created:
+            submitted_by = self.instance.application.applicant
+            perms = {
+                'view_applicationexperience': [submitted_by,],
+                'change_applicationexperience': [submitted_by,],
+                'delete_applicationexperience': [submitted_by,]
+            }
+        return perms
+
+    def validate_application(self, value):
+        """
+        Prevent adding/updating existing experiences
+        to a submitted/non editable app
+        """
+        if value.status not in EDITABLE_STATUSES:
+            raise serializers.ValidationError(
+                "Cannot add/update experiences to a non editable application"
+            )
+        return value
+
+    def validate(self, attrs):
+        if not confusable_homoglyphs_check(attrs):
+            raise serializers.ValidationError(HOMOGLYPH_ERROR)
+
+        # Validate date range is valid
+        start_date = attrs.get('start_date')
+        if start_date is None and self.instance:
+            start_date = self.instance.start_date
+
+        end_date = attrs.get('end_date')
+        if end_date is None and self.instance:
+            end_date = self.instance.end_date
+
+        if start_date and end_date and start_date > end_date:
+            raise serializers.ValidationError(
+                "Start date must be before end date"
+            )
+
+        return super().validate(attrs)
+
+
+class ApplicationExperienceReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApplicationExperience
+        fields = ['id', 'display_order', 'position_name', 'start_date',
+                  'end_date', 'advocacy_hours', 'marked_for_evaluation',
+                  'supervisor_last_name', 'supervisor_first_name',
+                  'supervisor_email', 'supervisor_not_available',]
+
+
+class ApplicationCourseSerializer(serializers.ModelSerializer,
+                                  ObjectPermissionsAssignmentMixin):
+    application = serializers.PrimaryKeyRelatedField(
+        queryset=Application.objects.all())
+    course_external_reference = serializers.CharField(
+        write_only=True, required=True
+    )
+    # Read-only field showing the actual linked XDS Course reference
+    xds_course = serializers.PrimaryKeyRelatedField(
+        read_only=True
+    )
+    course_name = serializers.ReadOnlyField()
+
+    class Meta:
+        model = ApplicationCourse
+        fields = ['id', 'application', 'display_order', 'category',
+                  'xds_course', 'course_external_reference', 'course_name',
+                  'completion_date', 'clocked_hours',
+                  'modified', 'created',]
+        extra_kwargs = {'modified': {'read_only': True},
+                        'created': {'read_only': True}}
+
+    def _get_or_create_course(self, reference):
+        """
+        Get existing coure or create new one
+        """
+        course = Course.objects.filter(reference=reference).first()
+
+        if course is None:
+            try:
+                course_name = validate_xds_course(reference)
+                course = Course.objects.create(
+                    reference=reference,
+                    name=course_name
+                )
+            except Exception as e:
+                logger.error(f"{XDS_FAILED_ERROR} {e}")
+                raise serializers.ValidationError(
+                    XDS_EXCEPTION_MSG
+                )
+        return course
+
+    def create(self, validated_data):
+        """
+        Create or link to XDS External Course
+        based on external reference
+        """
+        if 'course_external_reference' in validated_data:
+            reference = validated_data.pop('course_external_reference')
+            course = self._get_or_create_course(reference)
+            validated_data['xds_course'] = course
+
+        application_course = ApplicationCourse.objects.create(
+            **validated_data
+        )
+        return application_course
+
+    def update(self, instance, validated_data):
+        """
+        Update based on external reference and
+        sync to ELRR if course updated
+        """
+        application = instance.application
+        if 'application' in validated_data:
+            new_app = validated_data['application']
+            if application != new_app:
+                raise serializers.ValidationError(
+                    PARENT_ID_UPDATE_ERROR
+                )
+
+        if 'course_external_reference' in validated_data:
+            reference = validated_data.pop('course_external_reference')
+            course = self._get_or_create_course(reference)
+            validated_data['xds_course'] = course
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
+
+    def get_permissions_map(self, created):
+        perms = {}
+        if not created:
+            submitted_by = self.instance.application.applicant
+            perms = {
+                'view_applicationcourse': [submitted_by,],
+                'change_applicationcourse': [submitted_by,],
+                'delete_applicationcourse': [submitted_by,]
+            }
+        return perms
+
+    def validate_application(self, value):
+        """
+        Prevent adding/updating existing courses
+        to a submitted/non editable app
+        """
+        if value.status not in EDITABLE_STATUSES:
+            raise serializers.ValidationError(
+                "Cannot add/update courses to a non editable application"
+            )
+        return value
+
+    def validate(self, attrs):
+        if not confusable_homoglyphs_check(attrs):
+            raise serializers.ValidationError(HOMOGLYPH_ERROR)
+        return super().validate(attrs)
+
+
+class ApplicationCourseReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApplicationCourse
+        fields = ['id', 'display_order', 'category', 'xds_course',
+                  'course_name', 'completion_date', 'clocked_hours',]
+
+
+class ApplicationCommentSerializer(serializers.ModelSerializer,
+                                   ObjectPermissionsAssignmentMixin):
+    application = serializers.PrimaryKeyRelatedField(
+        queryset=Application.objects.all())
+    reviewer = serializers.SlugRelatedField(
+        slug_field='email',
+        default=serializers.CurrentUserDefault(),
+        read_only=True)
+
+    class Meta:
+        model = ApplicationComment
+        fields = ['id', 'application', 'reviewer', 'comment',
+                  'modified', 'created',]
+        extra_kwargs = {'modified': {'read_only': True},
+                        'created': {'read_only': True}}
+
+    def update(self, instance, validated_data):
+        if 'application' in validated_data:
+            new_app = validated_data['application']
+            if instance.application != new_app:
+                raise serializers.ValidationError(
+                    PARENT_ID_UPDATE_ERROR
+                )
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
+
+    def get_permissions_map(self, created):
+        perms = {}
+        if not created:
+            submitted_by = self.instance.reviewer
+            applicant = self.instance.application.applicant
+            perms = {
+                'view_applicationcomment': [submitted_by, applicant,],
+                'change_applicationcomment': [submitted_by,],
+                'delete_applicationcomment': [submitted_by,]
+            }
+        return perms
+
+    def validate(self, attrs):
+        if not confusable_homoglyphs_check(attrs):
+            raise serializers.ValidationError(HOMOGLYPH_ERROR)
+        return super().validate(attrs)
+
+
+class ApplicationCommentReadSerializer(serializers.ModelSerializer):
+    reviewer = serializers.SlugRelatedField(
+        slug_field='email', read_only=True)
+
+    class Meta:
+        model = ApplicationComment
+        fields = ['id', 'reviewer', 'comment', 'created',]
+
+
+class ApplicationSerializer(serializers.ModelSerializer,
+                            ObjectPermissionsAssignmentMixin):
+    applicant = serializers.SlugRelatedField(
+        slug_field='email',
+        default=serializers.CurrentUserDefault(),
+        read_only=True)
+    experiences = ApplicationExperienceReadSerializer(
+        many=True, read_only=True)
+    courses = ApplicationCourseReadSerializer(
+        many=True, read_only=True)
+    comments = ApplicationCommentReadSerializer(
+        many=True, read_only=True)
+
+    status = serializers.CharField(read_only=True)
+    final_submission_stamp = serializers.DateTimeField(read_only=True)
+    application_version = serializers.IntegerField(read_only=True)
+    policy = serializers.CharField(read_only=True)
+
+    total_advocacy_hours = serializers.DecimalField(
+        max_digits=10, decimal_places=2, read_only=True
+    )
+    total_marked_for_evaluation_hours = serializers.DecimalField(
+        max_digits=10, decimal_places=2, read_only=True
+    )
+    total_course_clocked_hours = serializers.DecimalField(
+        max_digits=7, decimal_places=2, read_only=True
+    )
+
+    class Meta:
+        model = Application
+        fields = ['id', 'applicant', 'application_type', 'position',
+                  'status', 'policy', 'application_version',
+                  'first_name', 'last_name', 'middle_initial',
+                  'affiliation', 'mili_status', 'rank', 'grade',
+                  'command_unit', 'installation', 'work_email',
+                  'has_mil_gov_work_email', 'other_sarc_email',
+                  'dsn_code', 'work_phone', 'work_phone_ext',
+                  'certification_awarded_date',
+                  'certification_expiration_date', 'no_experience_needed',
+                  'supervisor_last_name', 'supervisor_first_name',
+                  'supervisor_email', 'sarc_last_name', 'sarc_first_name',
+                  'sarc_email', 'commanding_officer_last_name',
+                  'commanding_officer_first_name', 'commanding_officer_email',
+                  'co_same_as_supervisor', 'code_of_ethics_acknowledgement',
+                  'final_submission', 'final_submission_stamp',
+                  'experiences', 'courses', 'comments',
+                  'total_advocacy_hours', 'total_marked_for_evaluation_hours',
+                  'total_course_clocked_hours', 'modified', 'created',]
+        extra_kwargs = {'modified': {'read_only': True},
+                        'created': {'read_only': True}}
+
+    def _handle_submission(self, validated_data):
+        # If final_submission is true,
+        # update final timestamp and status
+        if validated_data.get('final_submission'):
+            validated_data['final_submission_stamp'] = timezone.now()
+            validated_data['status'] = Application.StatusChoices.SUBMITTED
+
+    def create(self, validated_data):
+        validated_data['applicant'] = self.context['request'].user
+        self._handle_submission(validated_data)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if instance.status not in EDITABLE_STATUSES:
+            raise serializers.ValidationError(
+                'Cannot edit application'
+            )
+
+        self._handle_submission(validated_data)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
+
+    def get_permissions_map(self, created):
+        perms = {}
+        if not created:
+            submitted_by = self.instance.applicant
+            perms = {
+                'view_application': [submitted_by,],
+                'change_application': [submitted_by,],
+                'delete_application': [submitted_by,]
+            }
+        return perms
+
+    def validate(self, attrs):
+        if not confusable_homoglyphs_check(attrs):
+            raise serializers.ValidationError(HOMOGLYPH_ERROR)
+
+        # Check code of ethics acknowledgement is provided
+        if attrs.get('final_submission'):
+            has_code_ethics_ack = attrs.get('code_of_ethics_acknowledgement')
+            # If not in request check if it is already in instance
+            if not has_code_ethics_ack and self.instance:
+                has_code_ethics_ack = (
+                    self.instance.code_of_ethics_acknowledgement
+                )
+
+            if not has_code_ethics_ack:
+                raise serializers.ValidationError(
+                    'Code of ethics acknowledgement is required'
+                )
+
         return super().validate(attrs)
