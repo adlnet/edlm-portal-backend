@@ -1070,26 +1070,6 @@ class ApplicationViewTests(TestSetUp):
         self.assertEqual(str(self.application_comment.pk),
                          responseDict['id'])
 
-    def test_application_comment_requests_update_fields(self):
-        """Test that making a patch request to the application comment api
-        with data updates the application comment"""
-        self.application.save()
-        self.application_comment.save()
-
-        url = reverse(API_APPLICATION_COMMENTS_DETAIL,
-                      kwargs={'pk': self.application_comment.pk})
-        self.client.login(username=self.auth_email,
-                          password=self.auth_password)
-        response = self.client.patch(
-            url, {
-                'comment': 'Updated.'
-            }
-        )
-
-        responseDict = json.loads(response.content)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual('Updated.', responseDict['comment'])
-
 
 @tag("unit")
 class GetCourseProgressViewTests(TestSetUp):

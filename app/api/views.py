@@ -430,7 +430,11 @@ class ApplicationCommentViewSet(viewsets.ModelViewSet):
 
 class ApplicationViewSet(viewsets.ModelViewSet):
     """Viewset for Applications"""
-    queryset = Application.objects.all().annotate(
+    queryset = Application.objects.all().select_related(
+        'applicant'
+    ).prefetch_related(
+        'experiences', 'courses', 'comments'
+    ).annotate(
         total_advocacy_hours=Subquery(
             ApplicationExperience.objects.filter(
                 application=OuterRef('pk')
@@ -464,4 +468,4 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     )
     serializer_class = ApplicationSerializer
     filter_backends = [filters.ObjectPermissionsFilter,]
-    http_method_names = ['get', 'post', 'put', 'patch', 'head', 'options']
+    http_method_names = ['get', 'post', 'patch', 'head', 'options']
