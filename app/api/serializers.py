@@ -995,8 +995,7 @@ class ApplicationCommentSerializer(serializers.ModelSerializer,
         queryset=Application.objects.all())
     reviewer = serializers.SlugRelatedField(
         slug_field='email',
-        default=serializers.CurrentUserDefault(),
-        queryset=User.objects.all())
+        read_only=True)
 
     class Meta:
         model = ApplicationComment
@@ -1004,6 +1003,10 @@ class ApplicationCommentSerializer(serializers.ModelSerializer,
                   'created', 'modified',]
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
+
+    def create(self, validated_data):
+        validated_data['reviewer'] = self.context['request'].user
+        return super().create(validated_data)
 
     def get_permissions_map(self, created):
         perms = {}
