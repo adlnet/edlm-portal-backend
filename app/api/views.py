@@ -2,7 +2,7 @@ import logging
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import OuterRef, Prefetch, Subquery, Sum
+from django.db.models import Count, OuterRef, Prefetch, Subquery, Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters as filter
 from rest_framework import status, viewsets
@@ -425,6 +425,7 @@ class ApplicationCommentViewSet(viewsets.ModelViewSet):
     queryset = ApplicationComment.objects.all()
     serializer_class = ApplicationCommentSerializer
     filter_backends = [filters.ObjectPermissionsFilter,]
+    http_method_names = ['get', 'post', 'head', 'options']
 
 
 class ApplicationViewSet(viewsets.ModelViewSet):
@@ -445,6 +446,14 @@ class ApplicationViewSet(viewsets.ModelViewSet):
                 total_hours=Sum('advocacy_hours')
             ).values('total_hours')[:1]
         ),
+        total_marked_for_evaluation_count=Subquery(
+            ApplicationExperience.objects.filter(
+                application=OuterRef('pk'),
+                marked_for_evaluation=True
+            ).values('application').annotate(
+                total_count=Count('id')
+            ).values('total_count')[:1]
+        ),
         total_course_clocked_hours=Subquery(
             ApplicationCourse.objects.filter(
                 application=OuterRef('pk')
@@ -455,3 +464,4 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     )
     serializer_class = ApplicationSerializer
     filter_backends = [filters.ObjectPermissionsFilter,]
+    http_method_names = ['get', 'post', 'put', 'patch', 'head', 'options']
