@@ -1,5 +1,6 @@
 import logging
 
+from django.contrib.auth.models import Group
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
@@ -867,7 +868,8 @@ class ApplicationExperienceReadSerializer(serializers.ModelSerializer):
         fields = ['id', 'display_order', 'position_name', 'start_date',
                   'end_date', 'advocacy_hours', 'marked_for_evaluation',
                   'supervisor_last_name', 'supervisor_first_name',
-                  'supervisor_email', 'supervisor_not_available',]
+                  'supervisor_email', 'supervisor_not_available',
+                  'created', 'modified',]
 
 
 class ApplicationCourseSerializer(serializers.ModelSerializer,
@@ -983,7 +985,8 @@ class ApplicationCourseReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApplicationCourse
         fields = ['id', 'display_order', 'category', 'xds_course',
-                  'course_name', 'completion_date', 'clocked_hours',]
+                  'course_name', 'completion_date', 'clocked_hours',
+                  'created', 'modified',]
 
 
 class ApplicationCommentSerializer(serializers.ModelSerializer,
@@ -993,28 +996,14 @@ class ApplicationCommentSerializer(serializers.ModelSerializer,
     reviewer = serializers.SlugRelatedField(
         slug_field='email',
         default=serializers.CurrentUserDefault(),
-        read_only=True)
+        queryset=User.objects.all())
 
     class Meta:
         model = ApplicationComment
         fields = ['id', 'application', 'reviewer', 'comment',
-                  'modified', 'created',]
+                  'created', 'modified',]
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
-
-    def update(self, instance, validated_data):
-        if 'application' in validated_data:
-            new_app = validated_data['application']
-            if instance.application != new_app:
-                raise serializers.ValidationError(
-                    PARENT_ID_UPDATE_ERROR
-                )
-
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-
-        return instance
 
     def get_permissions_map(self, created):
         perms = {}
@@ -1023,8 +1012,6 @@ class ApplicationCommentSerializer(serializers.ModelSerializer,
             applicant = self.instance.application.applicant
             perms = {
                 'view_applicationcomment': [submitted_by, applicant,],
-                'change_applicationcomment': [submitted_by,],
-                'delete_applicationcomment': [submitted_by,]
             }
         return perms
 
@@ -1040,7 +1027,8 @@ class ApplicationCommentReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ApplicationComment
-        fields = ['id', 'reviewer', 'comment', 'created',]
+        fields = ['id', 'reviewer', 'comment', 'created',
+                  'modified',]
 
 
 class ApplicationSerializer(serializers.ModelSerializer,
@@ -1070,6 +1058,9 @@ class ApplicationSerializer(serializers.ModelSerializer,
     total_course_clocked_hours = serializers.DecimalField(
         max_digits=7, decimal_places=2, read_only=True
     )
+    total_marked_for_evaluation_count = serializers.IntegerField(
+        read_only=True
+    )
 
     class Meta:
         model = Application
@@ -1090,7 +1081,8 @@ class ApplicationSerializer(serializers.ModelSerializer,
                   'final_submission', 'final_submission_stamp',
                   'experiences', 'courses', 'comments',
                   'total_advocacy_hours', 'total_marked_for_evaluation_hours',
-                  'total_course_clocked_hours', 'modified', 'created',]
+                  'total_course_clocked_hours',
+                  'total_marked_for_evaluation_count', 'modified', 'created',]
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
 
@@ -1098,8 +1090,13 @@ class ApplicationSerializer(serializers.ModelSerializer,
         # If final_submission is true,
         # update final timestamp and status
         if validated_data.get('final_submission'):
-            validated_data['final_submission_stamp'] = timezone.now()
-            validated_data['status'] = Application.StatusChoices.SUBMITTED
+            # Set stamp and status if not already submitted for now,
+            # will need more info on if final submission will
+            # be updated again or not. Also need more info on
+            # resubmission handling after ADDITIONAL_INFO_NEEDED
+            if not self.instance.final_submission_stamp or not self.instance:
+                validated_data['final_submission_stamp'] = timezone.now()
+                validated_data['status'] = Application.StatusChoices.SUBMITTED
 
     def create(self, validated_data):
         validated_data['applicant'] = self.context['request'].user
@@ -1107,7 +1104,9 @@ class ApplicationSerializer(serializers.ModelSerializer,
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        if instance.status not in EDITABLE_STATUSES:
+        # Prevent applicant from editing non editable apps
+        if self.context['request'].user == instance.applicant and \
+           instance.status not in EDITABLE_STATUSES:
             raise serializers.ValidationError(
                 'Cannot edit application'
             )
@@ -1122,13 +1121,30 @@ class ApplicationSerializer(serializers.ModelSerializer,
 
     def get_permissions_map(self, created):
         perms = {}
-        if not created:
-            submitted_by = self.instance.applicant
+        submitted_by = self.instance.applicant
+        app_reviewer_group = Group.objects.filter(
+            name__iexact='Application Reviewers'
+        )
+        if app_reviewer_group.count() > 0:
+            app_reviewer_group = app_reviewer_group.first()
+        else:
+            app_reviewer_group = Group.objects.create(
+                name='Application Reviewers'
+            )
+
+        perms = {
+            'view_application': [submitted_by,],
+            'change_application': [submitted_by,]
+        }
+
+        # need more info on when reviewer perms should be added
+        # set it to any non draft status for now
+        if self.instance.status != Application.StatusChoices.DRAFT:
             perms = {
-                'view_application': [submitted_by,],
-                'change_application': [submitted_by,],
-                'delete_application': [submitted_by,]
+                'view_application': [submitted_by, app_reviewer_group,],
+                'change_application': [submitted_by, app_reviewer_group,]
             }
+
         return perms
 
     def validate(self, attrs):
@@ -1136,6 +1152,7 @@ class ApplicationSerializer(serializers.ModelSerializer,
             raise serializers.ValidationError(HOMOGLYPH_ERROR)
 
         # Check code of ethics acknowledgement is provided
+        # will need to check for other things here too
         if attrs.get('final_submission'):
             has_code_ethics_ack = attrs.get('code_of_ethics_acknowledgement')
             # If not in request check if it is already in instance
