@@ -1150,13 +1150,24 @@ class ApplicationSerializer(serializers.ModelSerializer,
 
         return perms
 
+    def validate_work_email(self, value):
+        """
+        Validate that work email ends with ".mil" or ".gov"
+        """
+        if value and not ((value.endswith('.mil')
+                           or value.endswith('.gov'))):
+            raise serializers.ValidationError(
+                'Work email must end with .mil or .gov'
+            )
+        return value
+
     def validate(self, attrs):
         if not confusable_homoglyphs_check(attrs):
             raise serializers.ValidationError(HOMOGLYPH_ERROR)
 
-        # Check code of ethics acknowledgement is provided
-        # will need to check for other things here too
+        # will need to check for other things here to validate too
         if attrs.get('final_submission'):
+            # Validate code of ethics acknowledgement is provided
             has_code_ethics_ack = attrs.get('code_of_ethics_acknowledgement')
             # If not in request check if it is already in instance
             if not has_code_ethics_ack and self.instance:
@@ -1166,7 +1177,21 @@ class ApplicationSerializer(serializers.ModelSerializer,
 
             if not has_code_ethics_ack:
                 raise serializers.ValidationError(
-                    'Code of ethics acknowledgement is required'
+                    'Code of ethics acknowledgement is '
+                    'required for final submission'
+                )
+
+            # Validate total course hours are atleast 32 hours
+            if self.instance:
+                total_course_hours = \
+                    self.instance.total_course_clocked_hours or 0
+            else:
+                total_course_hours = 0
+
+            if total_course_hours < 32:
+                raise serializers.ValidationError(
+                    'Total course clocked hours must be '
+                    'at least 32 hours for final submission'
                 )
 
         return super().validate(attrs)

@@ -902,6 +902,11 @@ class ApplicationViewTests(TestSetUp):
         valid data creates a submitted application"""
         self.application.code_of_ethics_acknowledgement = True
         self.application.save()
+        # 32 hours required for submission
+        self.course.save()
+        self.application_course.clocked_hours = 32
+        self.application_course.save()
+
         url = reverse(API_APPLICATIONS_DETAIL,
                       kwargs={'pk': self.application.pk})
         self.client.login(username=self.auth_email,
