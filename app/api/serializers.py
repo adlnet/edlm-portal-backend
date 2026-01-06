@@ -1,6 +1,5 @@
 import logging
 
-from django.contrib.auth.models import Group
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
@@ -841,6 +840,17 @@ class ApplicationExperienceSerializer(serializers.ModelSerializer,
             )
         return value
 
+    def validate_supervisor_email(self, value):
+        """
+        Validate that supervisor email ends with ".mil" or ".gov"
+        """
+        if value and not ((value.endswith('.mil')
+                           or value.endswith('.gov'))):
+            raise serializers.ValidationError(
+                'Supervisor email must end with .mil or .gov'
+            )
+        return value
+
     def validate(self, attrs):
         if not confusable_homoglyphs_check(attrs):
             raise serializers.ValidationError(HOMOGLYPH_ERROR)
@@ -1097,9 +1107,50 @@ class ApplicationSerializer(serializers.ModelSerializer,
             # will need more info on if final submission will
             # be updated again or not. Also need more info on
             # resubmission handling after ADDITIONAL_INFO_NEEDED
-            if not self.instance.final_submission_stamp or not self.instance:
+            if not self.instance or not self.instance.final_submission_stamp:
                 validated_data['final_submission_stamp'] = timezone.now()
                 validated_data['status'] = Application.StatusChoices.SUBMITTED
+
+    def _validate_course_hours_minimum(self):
+        # Check total course hours are atleast 32 hours
+        if self.instance:
+            total_course_hours = \
+                self.instance.total_course_clocked_hours or 0
+        else:
+            total_course_hours = 0
+
+        if total_course_hours < 32:
+            raise serializers.ValidationError(
+                'Total course clocked hours must be '
+                'at least 32 hours for final submission'
+            )
+
+    def _validate_new_sapr_va_application(self, validated_data):
+        # Vlidation for New SAPR VA application
+        # Might need to validate certification upload when implemented
+        # Might need to validate some sort of experience requirements
+        # Need more info on requirements
+        pass
+
+    def _validate_new_sarc_and_sapr_pm_application(self, validated_data):
+        # Validation for New SARC/SAPR_PM application
+        # Might need to validate certification upload when implemented
+        # Might need to validate some sort of experience requirements
+        # Need more info on requirements
+        pass
+
+    def _validate_renewal_sapr_va_application(self, validated_data):
+        # Validation for Renewal SAPR VA application
+        # Validate total course hours are atleast 32 hours
+        self._validate_course_hours_minimum()
+        # Might need to validate SARC recommendation fields
+        # Need more info on requirements
+
+    def _validate_renewal_sarc_and_sapr_pm_application(self, validated_data):
+        # Validation for Renewal SARC/SAPR_PM application
+        # Validate total course hours are atleast 32 hours
+        self._validate_course_hours_minimum()
+        # Need more info on requirements
 
     def create(self, validated_data):
         validated_data['applicant'] = self.context['request'].user
@@ -1125,15 +1176,6 @@ class ApplicationSerializer(serializers.ModelSerializer,
     def get_permissions_map(self, created):
         perms = {}
         submitted_by = self.instance.applicant
-        app_reviewer_group = Group.objects.filter(
-            name__iexact='Application Reviewers'
-        )
-        if app_reviewer_group.count() > 0:
-            app_reviewer_group = app_reviewer_group.first()
-        else:
-            app_reviewer_group = Group.objects.create(
-                name='Application Reviewers'
-            )
 
         perms = {
             'view_application': [submitted_by,],
@@ -1143,10 +1185,35 @@ class ApplicationSerializer(serializers.ModelSerializer,
         # need more info on when reviewer perms should be added
         # set it to any non draft status for now
         if self.instance.status != Application.StatusChoices.DRAFT:
-            perms = {
-                'view_application': [submitted_by, app_reviewer_group,],
-                'change_application': [submitted_by, app_reviewer_group,]
-            }
+            # Get experiences marked for evaluation and
+            # the related reviewer/supervisor emails
+            marked_experiences = self.instance.experiences.filter(
+                marked_for_evaluation=True
+            )
+            reviewers = set()
+            for experience in marked_experiences:
+                if experience.supervisor_email:
+                    try:
+                        reviewer = User.objects.get(
+                            email=experience.supervisor_email
+                        )
+                        reviewers.add(reviewer)
+                    except User.DoesNotExist:
+                        # Will need a way to set perms to this non user later
+                        logger.warning(
+                            f'Supervisor email {experience.supervisor_email} '
+                            'not found in db'
+                        )
+
+            if reviewers:
+                perms = {
+                    'view_application': [submitted_by,] + list(reviewers),
+                    'change_application': [submitted_by,]
+                }
+                # Looks like can use from guardian.shortcuts import remove_perm
+                # to remove reviewer permissions.
+                # Need more info on how the status changes work at each step,
+                # and which statuses will actually remove reviewer permissions
 
         return perms
 
@@ -1158,6 +1225,17 @@ class ApplicationSerializer(serializers.ModelSerializer,
                            or value.endswith('.gov'))):
             raise serializers.ValidationError(
                 'Work email must end with .mil or .gov'
+            )
+        return value
+
+    def validate_supervisor_email(self, value):
+        """
+        Validate that supervisor email ends with ".mil" or ".gov"
+        """
+        if value and not ((value.endswith('.mil')
+                           or value.endswith('.gov'))):
+            raise serializers.ValidationError(
+                'Supervisor email must end with .mil or .gov'
             )
         return value
 
@@ -1181,17 +1259,24 @@ class ApplicationSerializer(serializers.ModelSerializer,
                     'required for final submission'
                 )
 
-            # Validate total course hours are atleast 32 hours
-            if self.instance:
-                total_course_hours = \
-                    self.instance.total_course_clocked_hours or 0
-            else:
-                total_course_hours = 0
+            # Validate based on application type and position
+            application_type = attrs.get('application_type')
+            if not application_type and self.instance:
+                application_type = self.instance.application_type
 
-            if total_course_hours < 32:
-                raise serializers.ValidationError(
-                    'Total course clocked hours must be '
-                    'at least 32 hours for final submission'
-                )
+            position = attrs.get('position')
+            if not position and self.instance:
+                position = self.instance.position
+
+            if application_type == Application.ApplicationChoices.NEW:
+                if position == Application.PositionChoices.SAPR_VA:
+                    self._validate_new_sapr_va_application(attrs)
+                elif position == Application.PositionChoices.SARC_SAPR_PM:
+                    self._validate_new_sarc_and_sapr_pm_application(attrs)
+            elif application_type == Application.ApplicationChoices.RENEWAL:
+                if position == Application.PositionChoices.SAPR_VA:
+                    self._validate_renewal_sapr_va_application(attrs)
+                elif position == Application.PositionChoices.SARC_SAPR_PM:
+                    self._validate_renewal_sarc_and_sapr_pm_application(attrs)
 
         return super().validate(attrs)
