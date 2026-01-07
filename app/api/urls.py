@@ -29,6 +29,15 @@ router.register(r'learning-plan-goal-ksas', views.LearningPlanGoalKsaViewSet,
 router.register(r'learning-plan-goal-courses',
                 views.LearningPlanGoalCourseViewSet,
                 basename='learning-plan-goal-courses')
+router.register(r'applications', views.ApplicationViewSet,
+                basename='applications')
+router.register(r'application-courses', views.ApplicationCourseViewSet,
+                basename='application-courses')
+router.register(r'application-experiences', views.ApplicationExperienceViewSet,
+                basename='application-experiences')
+router.register(r'application-comments', views.ApplicationCommentViewSet,
+                basename='application-comments')
+
 
 # The API URLs are now determined automatically by the router.
 urlpatterns = [

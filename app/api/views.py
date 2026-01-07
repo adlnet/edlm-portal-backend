@@ -2,7 +2,7 @@ import logging
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Prefetch
+from django.db.models import Count, OuterRef, Prefetch, Subquery, Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters as filter
 from rest_framework import status, viewsets
@@ -11,11 +11,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_guardian import filters
 
-from api.models import (CandidateList, CandidateRanking, ProfileQuestion,
-                        ProfileResponse, TrainingPlan, LearningPlan,
-                        LearningPlanCompetency, LearningPlanGoal,
+from api.models import (Application, ApplicationComment, ApplicationCourse,
+                        ApplicationExperience, CandidateList, CandidateRanking,
+                        ProfileQuestion, ProfileResponse, TrainingPlan,
+                        LearningPlan, LearningPlanCompetency, LearningPlanGoal,
                         LearningPlanGoalCourse, LearningPlanGoalKsa)
-from api.serializers import (CandidateListSerializer,
+from api.serializers import (ApplicationCommentSerializer,
+                             ApplicationCourseSerializer,
+                             ApplicationExperienceSerializer,
+                             ApplicationSerializer,
+                             CandidateListSerializer,
                              CandidateRankingSerializer,
                              ProfileQuestionSerializer,
                              ProfileResponseSerializer,
@@ -381,3 +386,86 @@ class LearningPlanViewSet(viewsets.ModelViewSet):
     queryset = LearningPlan.objects.all()
     serializer_class = LearningPlanSerializer
     filter_backends = [filters.ObjectPermissionsFilter,]
+
+
+class ApplicationCourseViewSet(viewsets.ModelViewSet):
+    """Viewset for Application Courses"""
+    queryset = ApplicationCourse.objects.all()
+    serializer_class = ApplicationCourseSerializer
+    filter_backends = [filters.ObjectPermissionsFilter,]
+
+    def create(self, request, *args, **kwargs):
+        app_pk = request.data.get('application')
+        app = Application.objects.get(pk=app_pk)
+        if not request.user.has_perm('api.change_application', app):
+            return Response({'detail': 'You do not have permission'
+                            ' to perform this action'},
+                            status=status.HTTP_403_FORBIDDEN)
+        return super().create(request, *args, **kwargs)
+
+
+class ApplicationExperienceViewSet(viewsets.ModelViewSet):
+    """Viewset for Application Experiences"""
+    queryset = ApplicationExperience.objects.all()
+    serializer_class = ApplicationExperienceSerializer
+    filter_backends = [filters.ObjectPermissionsFilter,]
+
+    def create(self, request, *args, **kwargs):
+        app_pk = request.data.get('application')
+        app = Application.objects.get(pk=app_pk)
+        if not request.user.has_perm('api.change_application', app):
+            return Response({'detail': 'You do not have permission'
+                            ' to perform this action'},
+                            status=status.HTTP_403_FORBIDDEN)
+        return super().create(request, *args, **kwargs)
+
+
+class ApplicationCommentViewSet(viewsets.ModelViewSet):
+    """Viewset for Application Comments"""
+    queryset = ApplicationComment.objects.all()
+    serializer_class = ApplicationCommentSerializer
+    filter_backends = [filters.ObjectPermissionsFilter,]
+    http_method_names = ['get', 'post', 'head', 'options']
+
+
+class ApplicationViewSet(viewsets.ModelViewSet):
+    """Viewset for Applications"""
+    queryset = Application.objects.all().select_related(
+        'applicant'
+    ).prefetch_related(
+        'experiences', 'courses', 'comments'
+    ).annotate(
+        total_advocacy_hours=Subquery(
+            ApplicationExperience.objects.filter(
+                application=OuterRef('pk')
+            ).values('application').annotate(
+                total_hours=Sum('advocacy_hours')
+            ).values('total_hours')[:1]
+        ),
+        total_marked_for_evaluation_hours=Subquery(
+            ApplicationExperience.objects.filter(
+                application=OuterRef('pk'),
+                marked_for_evaluation=True
+            ).values('application').annotate(
+                total_hours=Sum('advocacy_hours')
+            ).values('total_hours')[:1]
+        ),
+        total_marked_for_evaluation_count=Subquery(
+            ApplicationExperience.objects.filter(
+                application=OuterRef('pk'),
+                marked_for_evaluation=True
+            ).values('application').annotate(
+                total_count=Count('id')
+            ).values('total_count')[:1]
+        ),
+        total_course_clocked_hours=Subquery(
+            ApplicationCourse.objects.filter(
+                application=OuterRef('pk')
+            ).values('application').annotate(
+                total_hours=Sum('clocked_hours')
+            ).values('total_hours')[:1]
+        )
+    )
+    serializer_class = ApplicationSerializer
+    filter_backends = [filters.ObjectPermissionsFilter,]
+    http_method_names = ['get', 'post', 'patch', 'head', 'options']
