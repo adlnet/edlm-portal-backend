@@ -1,7 +1,6 @@
 import logging
 
 from django.db import transaction
-from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from rest_framework_guardian.serializers import \
@@ -1058,9 +1057,13 @@ class ApplicationSerializer(serializers.ModelSerializer,
         many=True, read_only=True)
 
     status = serializers.CharField(read_only=True)
+    final_submission = serializers.BooleanField(read_only=True)
     final_submission_stamp = serializers.DateTimeField(read_only=True)
     application_version = serializers.IntegerField(read_only=True)
     policy = serializers.CharField(read_only=True)
+    code_of_ethics_acknowledgement = serializers.BooleanField(read_only=True)
+    code_of_ethics_acknowledged_stamp = \
+        serializers.DateTimeField(read_only=True)
 
     total_advocacy_hours = serializers.DecimalField(
         max_digits=10, decimal_places=2, read_only=True
@@ -1091,6 +1094,7 @@ class ApplicationSerializer(serializers.ModelSerializer,
                   'sarc_email', 'commanding_officer_last_name',
                   'commanding_officer_first_name', 'commanding_officer_email',
                   'co_same_as_supervisor', 'code_of_ethics_acknowledgement',
+                  'code_of_ethics_acknowledged_stamp',
                   'final_submission', 'final_submission_stamp',
                   'experiences', 'courses', 'comments',
                   'total_advocacy_hours', 'total_marked_for_evaluation_hours',
@@ -1098,18 +1102,6 @@ class ApplicationSerializer(serializers.ModelSerializer,
                   'total_marked_for_evaluation_count', 'modified', 'created',]
         extra_kwargs = {'modified': {'read_only': True},
                         'created': {'read_only': True}}
-
-    def _handle_submission(self, validated_data):
-        # If final_submission is true,
-        # update final timestamp and status
-        if validated_data.get('final_submission'):
-            # Set stamp and status if not already submitted for now,
-            # will need more info on if final submission will
-            # be updated again or not. Also need more info on
-            # resubmission handling after ADDITIONAL_INFO_NEEDED
-            if not self.instance or not self.instance.final_submission_stamp:
-                validated_data['final_submission_stamp'] = timezone.now()
-                validated_data['status'] = Application.StatusChoices.SUBMITTED
 
     def _validate_course_hours_minimum(self):
         # Check total course hours are atleast 32 hours
@@ -1125,36 +1117,22 @@ class ApplicationSerializer(serializers.ModelSerializer,
                 'at least 32 hours for final submission'
             )
 
-    def _validate_new_sapr_va_application(self, validated_data):
-        # Vlidation for New SAPR VA application
+    def _validate_new_application(self, validated_data):
+        # Vlidation for New application
         # Might need to validate certification upload when implemented
         # Might need to validate some sort of experience requirements
         # Need more info on requirements
         pass
 
-    def _validate_new_sarc_and_sapr_pm_application(self, validated_data):
-        # Validation for New SARC/SAPR_PM application
-        # Might need to validate certification upload when implemented
-        # Might need to validate some sort of experience requirements
-        # Need more info on requirements
-        pass
-
-    def _validate_renewal_sapr_va_application(self, validated_data):
+    def _validate_renewal_application(self, validated_data):
         # Validation for Renewal SAPR VA application
         # Validate total course hours are atleast 32 hours
         self._validate_course_hours_minimum()
         # Might need to validate SARC recommendation fields
         # Need more info on requirements
 
-    def _validate_renewal_sarc_and_sapr_pm_application(self, validated_data):
-        # Validation for Renewal SARC/SAPR_PM application
-        # Validate total course hours are atleast 32 hours
-        self._validate_course_hours_minimum()
-        # Need more info on requirements
-
     def create(self, validated_data):
         validated_data['applicant'] = self.context['request'].user
-        self._handle_submission(validated_data)
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
@@ -1164,8 +1142,6 @@ class ApplicationSerializer(serializers.ModelSerializer,
             raise serializers.ValidationError(
                 'Cannot edit application'
             )
-
-        self._handle_submission(validated_data)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -1244,8 +1220,14 @@ class ApplicationSerializer(serializers.ModelSerializer,
             raise serializers.ValidationError(HOMOGLYPH_ERROR)
 
         # will need to check for other things here to validate too
-        if attrs.get('final_submission'):
-            # Validate code of ethics acknowledgement is provided
+        if self.context.get('submission_validate'):
+            # If the application is not in an editable status,
+            # it cannot be submitted
+            if self.instance and self.instance.status not in EDITABLE_STATUSES:
+                raise serializers.ValidationError(
+                    'Cannot submit application in non submitable status'
+                )
+
             has_code_ethics_ack = attrs.get('code_of_ethics_acknowledgement')
             # If not in request check if it is already in instance
             if not has_code_ethics_ack and self.instance:
@@ -1264,19 +1246,9 @@ class ApplicationSerializer(serializers.ModelSerializer,
             if not application_type and self.instance:
                 application_type = self.instance.application_type
 
-            position = attrs.get('position')
-            if not position and self.instance:
-                position = self.instance.position
-
             if application_type == Application.ApplicationChoices.NEW:
-                if position == Application.PositionChoices.SAPR_VA:
-                    self._validate_new_sapr_va_application(attrs)
-                elif position == Application.PositionChoices.SARC_SAPR_PM:
-                    self._validate_new_sarc_and_sapr_pm_application(attrs)
+                self._validate_new_application(attrs)
             elif application_type == Application.ApplicationChoices.RENEWAL:
-                if position == Application.PositionChoices.SAPR_VA:
-                    self._validate_renewal_sapr_va_application(attrs)
-                elif position == Application.PositionChoices.SARC_SAPR_PM:
-                    self._validate_renewal_sarc_and_sapr_pm_application(attrs)
+                self._validate_renewal_application(attrs)
 
         return super().validate(attrs)
