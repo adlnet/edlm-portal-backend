@@ -70,18 +70,18 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# CORS_ALLOW_ALL_ORIGINS  = True
-# CORS_ALLOW_CREDENTIALS = True
-# CSRF_TRUSTED_ORIGINS = ['https://edlmportal.deloitteopenlxp.com',
-#                         'https://*.deloitteopenlxp.com', 'http://localhost']
-# CSRF_COOKIE_DOMAIN = '.deloitteopenlxp.com'
+CORS_ALLOW_ALL_ORIGINS  = True
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = ['https://edlmportal.deloitteopenlxp.com',
+                        'https://*.deloitteopenlxp.com', 'http://localhost']
+CSRF_COOKIE_DOMAIN = '.deloitteopenlxp.com'
 
-# SECURE_SSL_REDIRECT = True
-# SECURE_HSTS_SECONDS = 31536000
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-# SESSION_COOKIE_SECURE = True
-# SECURE_BROWSER_XSS_FILTER = True
-# SECURE_REDIRECT_EXEMPT = ['health/', 'api/health/']
+SECURE_SSL_REDIRECT = True
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SESSION_COOKIE_SECURE = True
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_REDIRECT_EXEMPT = ['health/', 'api/health/']
 
 ROOT_URLCONF = 'portal.urls'
 
@@ -103,39 +103,39 @@ TEMPLATES = [
 
 LOG_PATH = os.environ.get('LOG_PATH')
 
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
 
-#     'loggers': {
-#         'dict_config_logger': {
-#             'handlers': ['console', 'file_logs'],
-#             'level': 'INFO',
-#             'propagate': True,
-#         },
-#     },
+    'loggers': {
+        'dict_config_logger': {
+            'handlers': ['console', 'file_logs'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
 
-#     'handlers': {
-#         'console': {
-#             'class': 'logging.StreamHandler',
-#             'stream': sys.stdout,
-#             'formatter': 'simpleRe',
-#         },
-#         'file_logs': {
-#             'level': 'WARNING',
-#             'class': 'logging.FileHandler',
-#             'filename': LOG_PATH,
-#             'formatter': 'simpleRe',
-#         },
-#     },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'stream': sys.stdout,
+            'formatter': 'simpleRe',
+        },
+        'file_logs': {
+            'level': 'WARNING',
+            'class': 'logging.FileHandler',
+            'filename': LOG_PATH,
+            'formatter': 'simpleRe',
+        },
+    },
 
-#     'formatters': {
-#         'simpleRe': {
-#             'format': '{levelname} {asctime} {module} {message}',
-#             'style': '{',
-#         }
-#     }
-# }
+    'formatters': {
+        'simpleRe': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        }
+    }
+}
 
 WSGI_APPLICATION = 'portal.wsgi.application'
 
