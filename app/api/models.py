@@ -352,8 +352,13 @@ class Application(TimeStampedModel):
 
     # Ethics Acknowledgement
     code_of_ethics_acknowledgement = models.BooleanField(
+        default=False,
         verbose_name='Code of Ethics Acknowledgement',
         help_text='Applicant acknowledges code of ethics'
+    )
+    code_of_ethics_acknowledged_stamp = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Timestamp when code of ethics acknowledged'
     )
 
     # Application Information
