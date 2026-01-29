@@ -897,7 +897,7 @@ class ApplicationViewTests(TestSetUp):
         self.assertEqual(self.application.status, responseDict['status'])
         self.assertIsNotNone(responseDict['id'])
 
-    def test_application_requests_patch_final_submission(self):
+    def test_application_post_final_submission(self):
         """Test that making a patch request to the application api with
         valid data creates a submitted application"""
         self.application.code_of_ethics_acknowledgement = True
@@ -908,10 +908,10 @@ class ApplicationViewTests(TestSetUp):
         self.application_course.save()
 
         url = reverse(API_APPLICATIONS_DETAIL,
-                      kwargs={'pk': self.application.pk})
+                      kwargs={'pk': self.application.pk}) + 'final-submit/'
         self.client.login(username=self.auth_email,
                           password=self.auth_password)
-        response = self.client.patch(
+        response = self.client.post(
             url, {
                 'final_submission': True,
             }
@@ -919,8 +919,7 @@ class ApplicationViewTests(TestSetUp):
 
         responseDict = json.loads(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual('submitted', responseDict['status'])
-        self.assertIsNotNone(responseDict['final_submission_stamp'])
+        self.assertEqual(responseDict['detail'], 'Application final submitted')
 
     def test_application_experience_requests_no_auth(self):
         """Test that making a get request to the application experience api

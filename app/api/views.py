@@ -3,9 +3,11 @@ import logging
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, OuterRef, Prefetch, Subquery, Sum
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters as filter
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -469,3 +471,81 @@ class ApplicationViewSet(viewsets.ModelViewSet):
     serializer_class = ApplicationSerializer
     filter_backends = [filters.ObjectPermissionsFilter,]
     http_method_names = ['get', 'post', 'patch', 'head', 'options']
+
+    @action(detail=True, methods=['post'],
+            url_path='acknowledge-code-of-ethics')
+    def acknowledge_code_of_ethics(self, request, pk=None):
+        """Acknowledge the code of ethics for the application"""
+        try:
+            application = self.get_queryset().get(pk=pk)
+        except Application.DoesNotExist:
+            return Response({'detail': 'Application not found'},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        if request.user != application.applicant:
+            return Response({'detail': 'You do not have permission'
+                            ' to perform this action'},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        # Per requirement, once the user has acknowledged the code of ethics,
+        # they won't be able to uncheck it
+        if application.code_of_ethics_acknowledgement and \
+           application.code_of_ethics_acknowledged_stamp:
+            return Response({'detail': 'Code of ethics already acknowledged'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        application.code_of_ethics_acknowledgement = True
+        application.code_of_ethics_acknowledged_stamp = timezone.now()
+        application.save(
+            update_fields=[
+                'code_of_ethics_acknowledgement',
+                'code_of_ethics_acknowledged_stamp'
+            ]
+        )
+        return Response(
+            {'detail': 'Code of ethics acknowledged'},
+            status=status.HTTP_200_OK
+        )
+
+    @action(detail=True, methods=['post'],
+            url_path='final-submit')
+    def final_submit(self, request, pk=None):
+        """Final submission of the application"""
+        try:
+            application = self.get_queryset().get(pk=pk)
+        except Application.DoesNotExist:
+            return Response({'detail': 'Application not found'},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        if request.user != application.applicant:
+            return Response({'detail': 'You do not have permission'
+                            ' to perform this action'},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        serializer = ApplicationSerializer(
+            application,
+            data=request.data,
+            context={
+                'request': request,
+                'submission_validate': True
+            }
+        )
+
+        if not serializer.is_valid():
+            return Response(serializer.errors,
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        application.final_submission = True
+        application.final_submission_stamp = timezone.now()
+        application.status = Application.StatusChoices.SUBMITTED
+        application.save(
+            update_fields=[
+                'final_submission',
+                'final_submission_stamp',
+                'status'
+            ]
+        )
+        return Response(
+            {'detail': 'Application final submitted'},
+            status=status.HTTP_200_OK
+        )

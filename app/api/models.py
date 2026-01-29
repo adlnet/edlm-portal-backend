@@ -326,8 +326,14 @@ class Application(TimeStampedModel):
         RENEWAL = 'renewal', 'Renewal Application'
 
     class PositionChoices(models.TextChoices):
-        SAPR_VA = 'SAPR_VA', 'SAPR VA (Victim Advocate)'
-        SARC_SAPR_PM = 'SARC/SAPR_PM', 'SARC / SAPR PM'
+        SAPR_PROGRAM_ADMINISTRATOR = 'SAPR_Program_Administrator', 'SAPR Program Administrator'
+        SAPR_VA = 'SAPR_VA', 'SAPR VA'
+        PRINCIPAL_SARC = 'Principal_SARC', 'Principal SARC'
+        SUPERVISORY_SARC = 'Supervisory_SARC', 'Supervisory SARC'
+        COLLATERAL_DUTY_SARC = 'Collateral_Duty_SARC', 'Collateral Duty SARC'
+        SPECIAL_ASSIGNMENT_SARC = 'Special_Assignment_SARC', 'Special Assignment SARC'
+        COLLATERAL_DUTY_SAPR_VA = 'Collateral_Duty_SAPR_VA', 'Collateral Duty SAPR VA'
+        SPECIAL_ASSIGNMENT_SAPR_VA = 'Special_Assignment_SAPR_VA', 'Special Assignment SAPR VA'
 
     class StatusChoices(models.TextChoices):
         DRAFT = 'draft', 'Draft'
@@ -352,8 +358,13 @@ class Application(TimeStampedModel):
 
     # Ethics Acknowledgement
     code_of_ethics_acknowledgement = models.BooleanField(
+        default=False,
         verbose_name='Code of Ethics Acknowledgement',
         help_text='Applicant acknowledges code of ethics'
+    )
+    code_of_ethics_acknowledged_stamp = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Timestamp when code of ethics acknowledged'
     )
 
     # Application Information
@@ -362,7 +373,7 @@ class Application(TimeStampedModel):
         help_text='Type of application: New or Renewal'
     )
     position = models.CharField(
-        max_length=20, blank=True, choices=(PositionChoices.choices),
+        max_length=40, blank=True, choices=(PositionChoices.choices),
         help_text='Position being applied for: SAPR VA or SARC / SAPR PM'
     )
     status = models.CharField(
