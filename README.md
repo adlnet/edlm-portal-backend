@@ -35,11 +35,11 @@ The Enterprise Digital Learning Management (EDLM) Portal Backend is the consolid
 
     - Enter the XDS, ELRR, and ECCR endpoints you wish to query. These are the target URLs of the individual service APIs, and the `Target api` in bold are required to save the configuration.
         
-    - Under `Manager Connections` and `Organization Admin Connections`, there is an option to add permissions of specific Manager groups or Admin Org groups. Examples of permissions you might add for your configuration include adding/deleting log entries, adding comments, and viewing learning plans.
+    - Under `Manager Connections` and `Organization Admin Connections`, there is an option to add a flag that external systems can rely on to determine user role. For example, if you belong to the Manager group then you might have different capabilities than someone in the Admin group. Some capabilities you might add for your configuration include adding/deleting log entries, adding comments, and viewing learning plans.
         
     - You can also configure your account to send data to LRS, but filling out the LRS settings is optional.
 
-4. Add Admin Configuration - Admin Configurations allows setting a `Name` and `Target` URL and then uses object-level permissions to allow the UI to access additional configurations that only certain users have access to. This is configured the same way as the base configuration above, with XDS, ELRR, and ECCR endpoints.
+4. Add Admin Configuration - Admin Configurations allows setting a `Name` and `Target` URL and then uses object-level permissions to allow the UI to access additional configurations that only certain users have access to.
 
 5. Ui Configurations - This configuration allows the user to set UI visuals for the EDLM Portal, such as displaying a welcome message when other users log into the site.
     * Click on `UI configurations` > `Add UI configuration`
@@ -94,4 +94,8 @@ The EDLM Portal Backend uses Pylint and Coverage for code coverage testing. To r
 
 ### End to End Testing
 
-The EDLM Portal Backend uses cypress for system end to end testing.
+The EDLM Portal Backend uses cypress for system end to end testing. Cypress documentation can be found [here](https://docs.cypress.io/app/get-started/why-cypress).
+
+### Authorization
+
+Using Django's Admin system, permissions can be applied to a specific user or group. We use  [djangorestframework-guardian2](https://pypi.org/project/djangorestframework-guardian2/) for object-level permissions, and more information about editing these permissions can be found [here](https://docs.djangoproject.com/en/6.0/topics/auth/customizing/).
