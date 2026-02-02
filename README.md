@@ -7,6 +7,8 @@ The Enterprise Digital Learning Management (EDLM) Portal Backend is the consolid
 
 | Environment Variable      | Description |
 | ------------------------- | ----------- |
+| CORS_ALLOWED_CREDENTIALS  | Specifies if the server should allow credential requests |
+| CORS_ALLOWED_ORIGINS      | A list of allowed origins for safe requests | 
 | CSRF_COOKIE_DOMAIN            | The domain to be used when setting the CSRF cookie. This can be useful for easily allowing cross-subdomain requests to be excluded from the normal cross site request forgery protection. |
 | CSRF_TRUSTED_ORIGINS            | A list of trusted origins for unsafe requests |
 | DB_HOST                   | The host name, IP, or docker container name of the database |
