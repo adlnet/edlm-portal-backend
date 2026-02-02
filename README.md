@@ -35,7 +35,7 @@ The Enterprise Digital Learning Management (EDLM) Portal Backend is the consolid
 
     - Enter the XDS, ELRR, and ECCR endpoints you wish to query. These are the target URLs of the individual service APIs, and the `Target api` in bold are required to save the configuration.
         
-    - Under `Manager Connections` and `Organization Admin Connections`, there is an option to add a flag that external systems can rely on to determine user role. For example, if you belong to the Manager group then you might have different capabilities than someone in the Admin group. Some capabilities you might add for your configuration include adding/deleting log entries, adding comments, and viewing learning plans.
+    - Under `Manager Connections` and `Organization Admin Connections`, you can configure Manager and Organization Admin groups, and the configuration API will return different information depending on if the current user is in any of those groups, or has been added to any Admin Configs.
         
     - You can also configure your account to send data to LRS, but filling out the LRS settings is optional.
 
