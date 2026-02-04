@@ -28,6 +28,7 @@ graph TD;
         LRS-->|Activities|BE;
         Moodle-->|Course Status|UI;
         CASS-->|Competency & Credential|UI & BE;
+        BE-->UI;
 ```
 
 ## Environment variables
