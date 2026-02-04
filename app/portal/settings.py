@@ -18,21 +18,19 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-oyg-*!=r_t3za4ii7(l(tk%8+ubb3h&yg+!z-4f@+*3m8p4_60'
+SECRET_KEY = os.environ.get('SECRET_KEY_VAL')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [os.environ.get("HOSTS")]
 
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -70,11 +68,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS  = True
-CORS_ALLOW_CREDENTIALS = True
-CSRF_TRUSTED_ORIGINS = ['https://edlmportal.deloitteopenlxp.com',
-                        'https://*.deloitteopenlxp.com', 'http://localhost']
-CSRF_COOKIE_DOMAIN = '.deloitteopenlxp.com'
+cors_origin = os.environ.get('CORS_ALLOWED_ORIGINS')
+CORS_ALLOWED_ORIGINS = [cors_origin] if cors_origin else []
+CORS_ALLOW_CREDENTIALS = os.environ.get('CORS_ALLOWED_CREDENTIALS')
+csrf_domain = os.environ.get('CSRF_TRUSTED_DOMAIN')
+CSRF_TRUSTED_ORIGINS = [csrf_domain] if csrf_domain else []
+CSRF_COOKIE_DOMAIN = os.environ.get('CSRF_COOKIE_DOMAIN')
 
 SECURE_SSL_REDIRECT = True
 SECURE_HSTS_SECONDS = 31536000

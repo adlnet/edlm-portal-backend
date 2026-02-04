@@ -7,6 +7,8 @@ The Enterprise Digital Learning Management (EDLM) Portal Backend is the consolid
 
 | Environment Variable      | Description |
 | ------------------------- | ----------- |
+| CORS_ALLOWED_CREDENTIALS  | Specifies if the server should allow credential requests |
+| CORS_ALLOWED_ORIGINS      | A list of allowed origins for safe requests | 
 | CSRF_COOKIE_DOMAIN            | The domain to be used when setting the CSRF cookie. This can be useful for easily allowing cross-subdomain requests to be excluded from the normal cross site request forgery protection. |
 | CSRF_TRUSTED_ORIGINS            | A list of trusted origins for unsafe requests |
 | DB_HOST                   | The host name, IP, or docker container name of the database |
@@ -26,6 +28,29 @@ The Enterprise Digital Learning Management (EDLM) Portal Backend is the consolid
 | XAPI_ACTOR_ACCOUNT_NAME_JWT_FIELDS  | A comma-separated list of fields to check in the JWT for the `$.actor.account.name` field on xAPI Statements. The first non-empty string found will be chosen. Defaults to `activecac,preferred_username`. Only used when `XAPI_USE_JWT` is `true`
 
 ## Configuration for EDLM Portal Backend
+
+1. After running `docker compose up -d --build`, navigate over to `http://localhost:8100/admin/` in your browser and login to the Django Admin page with the admin credentials set in your `.env`(`DJANGO_SUPERUSER_EMAIL` & `DJANGO_SUPERUSER_PASSWORD`)
+
+2. Once you have logged in, you can see that you have access to three different configuration options: Admin configurations, Configurations, and UI configurations. The site must be properly configured with API endpoints to enable sharing course data.
+
+3.  Add Configuration - This configuration allows you to set up base connections and add yourself to Manager groups or Admin groups in the organization. **If a user is in a group that is configured to be a Manager or Admin, then it sets a flag on their account that can be checked via API so that the UI can change based on the role that user has.**
+
+    - Enter the XDS, ELRR, and ECCR endpoints you wish to query. These are the target URLs of the individual service APIs, and the `Target api` in bold are required to save the configuration.
+        
+    - Under `Manager Connections` and `Organization Admin Connections`, you can configure Manager and Organization Admin groups, and the configuration API will return different information depending on if the current user is in any of those groups, or has been added to any Admin Configs.
+        
+    - You can also configure your account to send data to LRS, but filling out the LRS settings is optional.
+
+4. Add Admin Configuration - Admin Configurations allows setting a `Name` and `Target` URL and then uses object-level permissions to allow the UI to access additional configurations that only certain users have access to.
+
+5. Ui Configurations - This configuration allows the user to set UI visuals for the EDLM Portal, such as displaying a welcome message when other users log into the site.
+    * Click on `UI configurations` > `Add UI configuration`
+
+    * Fill out the Portal Name and Welcome Message you wish to be displayed.
+
+    * A logo image must also be provided. It must be an image file type to display.
+
+    * There can only be one Ui Configuration instance - if you wish to set a new UI, you can click on the `PK` column header and in the right corner of the configuration screen there will be a `Delete` button. 
 
 <details><summary> Troubleshooting the EDLM Portal Backend</summary>
 
@@ -71,14 +96,8 @@ The EDLM Portal Backend uses Pylint and Coverage for code coverage testing. To r
 
 ### End to End Testing
 
-The EDLM Portal Backend uses cypress for system end to end testing.
+The EDLM Portal Backend uses cypress for system end to end testing. Cypress documentation can be found [here](https://docs.cypress.io/app/get-started/why-cypress).
 
-# Authentication
+### Authorization
 
-We are using our P1-Auth package to handle authentication of P1 users.
-
-Information on the settings for the authentication module can be found on the [P1-Auth repo](https://github.com/OpenLXP/p1-auth).
-
-# Authorization
-
-Using Django's Admin system, permissions can be applied to a specific user or group.  The P1-Auth package allows automating associations, which can be used to assign permissions as needed.
+Using Django's Admin system, permissions can be applied to a specific user or group. We use  [djangorestframework-guardian2](https://pypi.org/project/djangorestframework-guardian2/) for object-level permissions, and more information about editing these permissions can be found [here](https://docs.djangoproject.com/en/6.0/topics/auth/customizing/).
