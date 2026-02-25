@@ -1,5 +1,5 @@
 # Enterprise Digital Learning Management: Portal-Backend
-The Enterprise Digital Learning Management (EDLM) Portal Backend is the consolidated backend to the human-facing Portal UI application, enabling complex data processing across multiple data sources. Because the Portal Backend is a separate application, it can be deployed in a separate environment from the connected services. It can even be configured to point to different deployments (ECC, ELRR, ECCR, Moodle, etc.) as needed. In addition, multiple Portal Backend applications can be deployed and point to the same instances, allowing for excellent installation and configuration flexibility. 
+The Enterprise Digital Learning Management (EDLM) Portal Backend is the consolidated backend to the human-facing [Portal UI](https://github.com/adlnet/edlm-portal-ui) application, enabling complex data processing across multiple data sources. Because the Portal Backend is a separate application, it can be deployed in a separate environment from the connected services. It can even be configured to point to different deployments (ECC, ELRR, ECCR, Moodle, etc.) as needed. In addition, multiple Portal Backend applications can be deployed and point to the same instances, allowing for excellent installation and configuration flexibility. 
 
 ## EDLM Portal System Architecture
 
@@ -130,3 +130,9 @@ The EDLM Portal Backend uses cypress for system end to end testing. Cypress docu
 ### Authorization
 
 Using Django's Admin system, permissions can be applied to a specific user or group. We use  [djangorestframework-guardian2](https://pypi.org/project/djangorestframework-guardian2/) for object-level permissions, and more information about editing these permissions can be found [here](https://docs.djangoproject.com/en/6.0/topics/auth/customizing/).
+
+## Additional Information
+[EDLM-Portal Wiki can be found here](https://github.com/adlnet/edlm-portal-ui/wiki)
+
+## License
+This project uses the [Apache](http://www.apache.org/licenses/LICENSE-2.0) license.
