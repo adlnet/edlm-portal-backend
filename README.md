@@ -1,5 +1,5 @@
 # Enterprise Digital Learning Management: Portal-Backend
-The Enterprise Digital Learning Management (EDLM) Portal Backend is the consolidated backend to the human-facing Portal UI application, enabling complex data processing across multiple data sources. Because the Portal Backend is a separate application, it can be deployed in a separate environment from the connected services. It can even be configured to point to different deployments (ECC, ELRR, ECCR, Moodle, etc.) as needed. In addition, multiple Portal Backend applications can be deployed and point to the same instances, allowing for excellent installation and configuration flexibility. 
+The Enterprise Digital Learning Management (EDLM) Portal Backend is the consolidated backend to the human-facing [Portal UI](https://github.com/adlnet/edlm-portal-ui) application, enabling complex data processing across multiple data sources. Because the Portal Backend is a separate application, it can be deployed in a separate environment from the connected services. It can even be configured to point to different deployments (ECC, ELRR, ECCR, Moodle, etc.) as needed. In addition, multiple Portal Backend applications can be deployed and point to the same instances, allowing for excellent installation and configuration flexibility. 
 
 ## EDLM Portal System Architecture
 
@@ -100,21 +100,7 @@ To update an existing installation:
 
 </details>
 
-<details><summary> EDLM Portal Backend Authentication </summary>
-
-Information on the settings for the authentication module can be found on the [P1-Auth repo](https://github.com/OpenLXP/p1-auth) and [django-rest-knox documentation](https://jazzband.github.io/django-rest-knox/).
-
-</details>
-
-<details><summary> ECC XDS Authorization</summary>
-
-The environment variables `SU_FLAG`, `SU_VALUE` , `STAFF_FLAG`, and `STAFF_VALUE` should be defined (if using docker-compose the variables can be passed through) to automate Staff and Super User access.
-
-Additional permission automation can be done using `RelatedAssignment` and `AttributeCheck` within the Django Admin.
-
-</details>
-
-# Deployment
+## Deployment
 The EDLM Portal Backend is deployed using Docker containers. Docker containers are portable, scalable, and reliable. EDLM Docker images will be stored in the public IronBank's Repo1 registry to allow anyone to pull and deploy the image. Docker images are also cloud agnostic which allows for deployment on any cloud provider. Images can be deployed as a single Docker image, a cloud provided container service, and Kubernetes for orchestration. The EDLM deploys component images on Kubernetes to orchestrate containers for scalability, reliability, and high availability.
 
 ## Testing
@@ -127,6 +113,12 @@ The EDLM Portal Backend uses Pylint and Coverage for code coverage testing. To r
 
 The EDLM Portal Backend uses cypress for system end to end testing. Cypress documentation can be found [here](https://docs.cypress.io/app/get-started/why-cypress).
 
-### Authorization
+## Authorization
 
 Using Django's Admin system, permissions can be applied to a specific user or group. We use  [djangorestframework-guardian2](https://pypi.org/project/djangorestframework-guardian2/) for object-level permissions, and more information about editing these permissions can be found [here](https://docs.djangoproject.com/en/6.0/topics/auth/customizing/).
+
+## Additional Information
+[EDLM-Portal Wiki can be found here](https://github.com/adlnet/edlm-portal-ui/wiki)
+
+## License
+This project uses the [Apache](http://www.apache.org/licenses/LICENSE-2.0) license.
